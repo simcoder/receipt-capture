@@ -86,18 +86,37 @@ npm test
 npm run typecheck
 ```
 
-The app is in `mobile/`:
+## Run locally
+
+Needs a Mac with Xcode and the iOS Simulator. Commands below are from this folder after you clone the repo.
+
+1. Install the app and copy the env file.
 
 ```bash
-cd mobile
-cp env.example .env
 npm install
-npx expo start --ios
+npm --prefix mobile install
+cp mobile/env.example mobile/.env
 ```
 
-`--ios` opens the installed iOS Simulator. With that simulator running, `sh scripts/seed-simulator-photos.sh` from `mobile/` puts the cafe, fuel, and office pictures into its photo library so **Tap to choose from library** can use them. The banner under the status bar is green while the Mac has a network and red when it does not. Log out is on Profile. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito. Save a draft and queue it. With the banner green, queue sends the receipt to the API. With the banner red, queue uses the local fake. Turning the network back on does not send that receipt again. Stop Expo, start it again, and choose the same preview. The queue comes back. Log out clears that company's queue.
+2. Put the Cognito region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack into `mobile/.env`. Usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`. If those values are empty, the sign-in screen offers **Preview form as northwind** and does not call Cognito.
 
-Put the region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`. With no API URL, or when the API cannot be reached, **Queue receipt** uses the local fake. A lost success retries that same key and keeps the same receipt id.
+3. Start Expo and open the simulator.
+
+```bash
+npm run ios
+```
+
+4. In a second terminal, with that simulator still open, load the pictures from `mobile/assets/fake-receipts/` into the simulator photo library.
+
+```bash
+npm run seed:photos
+```
+
+That folder already has cafe, fuel, and office. Add any other PNG or JPEG there and run `npm run seed:photos` again. The script sends every picture in the folder to the booted simulator.
+
+5. In the app, sign in. **Capture** opens the camera. **Tap to choose from library** opens the photo library, which now includes those receipts. **Use a fake receipt** opens the form with cafe, fuel, or office without using the library. **Profile** shows the company name and **Log out**.
+
+The banner under the status bar is green while the Mac has a network and red when it does not. With the banner green, **Queue receipt** sends the receipt to the API. With the banner red, or when the API URL is missing, it uses the local fake. Turning the network back on does not send that receipt again. A lost success retries the same key and keeps the same receipt id.
 
 ## Companies
 

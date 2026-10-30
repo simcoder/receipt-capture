@@ -4,7 +4,9 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start"
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "seed:photos": "sh scripts/seed-simulator-photos.sh"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
