@@ -20,7 +20,7 @@ Started 2026-10-29. This is a multi-day slice aimed at one coherent demo. Extra 
 | Expo sign-in | Issue 6. In-app Cognito password sign-in. Tokens in SecureStore. Logout clears the queue. |
 | Receipt form | Issue 7. Merchant, amount, currency, `MM-DD-YYYY` date, and a synthetic image. The screen shows every state and does not mark Confirmed. |
 | Offline queue | Issue 8. An offline toggle. Receipt metadata stays on the device and reloads after relaunch. Tokens and image bytes are not in that store. |
-| AWS stack | Written locally in `infra/`. Issue 9. Not deployed. Cleanup is `infra/CLEANUP.md`. |
+| AWS stack | Issue 9. `ReceiptCapturePoc` in `infra/`. Deploy and destroy from that folder. Cleanup is `infra/CLEANUP.md`. |
 | Five-minute demo | Not recorded. |
 
 ## Run the tests
@@ -44,7 +44,7 @@ npx expo start --ios
 
 `--ios` opens the installed iOS Simulator. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito. Turn on **Offline**, save a draft, and queue it. The status rail is on the saved receipt. Stop Expo, start it again, and choose the same preview. The queue and the offline toggle come back. Log out clears that company's queue.
 
-Put the region, user pool id, and app client id from the infra stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). The pool is created when issue 9 deploys.
+Put the region, user pool id, and app client id from the `ReceiptCapturePoc` stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`.
 
 ## Companies
 

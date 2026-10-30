@@ -1,0 +1,22 @@
+{
+  "name": "receipt-capture-infra",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "synth": "cdk synth",
+    "diff": "cdk diff ReceiptCapturePoc",
+    "deploy": "cdk deploy ReceiptCapturePoc --require-approval never",
+    "destroy": "cdk destroy ReceiptCapturePoc --force"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.200.0",
+    "constructs": "^10.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "aws-cdk": "^2.200.0",
+    "typescript": "^5.8.3"
+  }
+}
