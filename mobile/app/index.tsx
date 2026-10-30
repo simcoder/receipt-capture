@@ -18,11 +18,13 @@ import {
 } from "../src/cognitoAuth";
 import { deviceStore } from "../src/deviceStore";
 import { clearCompanyQueue, loadLocalSession, saveOffline, saveQueue } from "../src/localQueue";
+import { queueDraft, type LocalReceipt } from "../src/receiptDraft";
 import { ReceiptCapture } from "../src/ReceiptCapture";
-import type { LocalReceipt } from "../src/receiptDraft";
+import { clearFake, submitReceipt } from "../src/submitReceipt";
 
 const region = process.env.EXPO_PUBLIC_COGNITO_REGION ?? "";
 const clientId = process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID ?? "";
+const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
 
 export default function SignInScreen() {
   const [username, setUsername] = useState("");
@@ -40,7 +42,7 @@ export default function SignInScreen() {
 
   useEffect(() => {
     SecureStore.getItemAsync(SECURE_STORE_KEYS[0])
-      .then((stored) => setIdToken(stored))
+      .then((storedId) => setIdToken(storedId))
       .finally(() => setBusy(false));
   }, []);
 
@@ -126,12 +128,57 @@ export default function SignInScreen() {
     setQueueReady(false);
     if (companyId) {
       await clearCompanyQueue(deviceStore, companyId);
+      await clearFake(deviceStore, companyId);
     }
     await Promise.all(cleared.deleteKeys.map((key) => SecureStore.deleteItemAsync(key)));
     setReceipts(cleared.queue);
     setIdToken(null);
     setPreviewCompany(null);
     setUsername("");
+  }
+
+  function replaceReceipt(next: LocalReceipt) {
+    setReceipts((current) => current.map((item) => (item.localId === next.localId ? next : item)));
+  }
+
+  async function send(receipt: LocalReceipt) {
+    const idempotencyKey = receipt.idempotencyKey ?? `local-${receipt.localId}`;
+    const result = await submitReceipt({
+      store: deviceStore,
+      companyId: receipt.companyId,
+      merchant: receipt.merchant,
+      amountMinor: receipt.amountMinor,
+      currency: receipt.currency,
+      date: receipt.date,
+      idempotencyKey,
+      idToken,
+      apiUrl,
+      offline,
+    });
+    replaceReceipt({
+      ...receipt,
+      idempotencyKey,
+      receiptId: result.receiptId,
+      status: result.status,
+      replayed: result.replayed,
+      submitSource: result.source,
+    });
+  }
+
+  async function queueAndSubmit(localId: string) {
+    const current = receipts.find((item) => item.localId === localId);
+    if (!current) return;
+    setQueueError(null);
+    try {
+      const queued = {
+        ...queueDraft(current),
+        idempotencyKey: current.idempotencyKey ?? `local-${current.localId}`,
+      };
+      replaceReceipt(queued);
+      await send(queued);
+    } catch (submitError) {
+      setQueueError(submitError instanceof Error ? submitError.message : "Could not submit the receipt");
+    }
   }
 
   if (busy && !showCapture) {
@@ -161,6 +208,7 @@ export default function SignInScreen() {
           receipts={receipts}
           onChange={setReceipts}
           onOfflineChange={setOffline}
+          onQueue={(localId) => void queueAndSubmit(localId)}
           onLogout={onLogout}
         />
       </SafeAreaView>

@@ -22,6 +22,10 @@ export type LocalReceipt = {
   date: string;
   imageId: SyntheticImageId;
   status: ReceiptStatus;
+  idempotencyKey?: string;
+  receiptId?: string;
+  replayed?: boolean;
+  submitSource?: "api" | "local-fake";
 };
 
 export type CaptureInput = {

@@ -3,7 +3,6 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from
 import {
   captureDraft,
   formatMoney,
-  queueDraft,
   RECEIPT_STATUSES,
   SYNTHETIC_IMAGES,
   syntheticImageLabel,
@@ -24,6 +23,7 @@ export function ReceiptCapture(props: {
   receipts: readonly LocalReceipt[];
   onChange: (receipts: LocalReceipt[]) => void;
   onOfflineChange: (offline: boolean) => void;
+  onQueue: (localId: string) => void;
   onLogout: () => void;
 }) {
   const [merchant, setMerchant] = useState("");
@@ -58,13 +58,7 @@ export function ReceiptCapture(props: {
 
   function onQueue(localId: string) {
     setError(null);
-    try {
-      props.onChange(
-        props.receipts.map((receipt) => (receipt.localId === localId ? queueDraft(receipt) : receipt)),
-      );
-    } catch (queueError) {
-      setError(queueError instanceof Error ? queueError.message : "Could not queue the receipt");
-    }
+    props.onQueue(localId);
   }
 
   return (
@@ -157,11 +151,26 @@ export function ReceiptCapture(props: {
       {props.receipts.map((receipt) => (
         <View key={receipt.localId} style={styles.receipt}>
           <Text style={styles.merchant}>{receipt.merchant}</Text>
+          <Text style={styles.receiptId}>
+            {receipt.receiptId
+              ? `Receipt id ${receipt.receiptId}`
+              : receipt.status === "Draft"
+                ? "Receipt id appears after you queue"
+                : "Receipt id appears when submit succeeds"}
+          </Text>
+          {!receipt.receiptId && props.queueError ? <Text style={styles.error}>{props.queueError}</Text> : null}
+          {receipt.replayed ? <Text style={styles.receiptId}>Same receipt</Text> : null}
+          {receipt.submitSource === "local-fake" ? <Text style={styles.receiptId}>Local fake</Text> : null}
           <Text>
             {formatMoney(receipt.amountMinor, receipt.currency)} · {receipt.amountMinor} minor units
           </Text>
           <Text>{receipt.date}</Text>
           <Text>{syntheticImageLabel(receipt.imageId)}</Text>
+          {receipt.status === "Draft" ? (
+            <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
+              <Text>Queue receipt</Text>
+            </Pressable>
+          ) : null}
           <Text style={styles.label}>Status</Text>
           <View style={styles.rail}>
             {RECEIPT_STATUSES.map((status) => {
@@ -174,11 +183,6 @@ export function ReceiptCapture(props: {
             })}
           </View>
           <Text style={styles.note}>Confirmed is set by the server or by a review correction.</Text>
-          {receipt.status === "Draft" ? (
-            <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
-              <Text>Queue receipt</Text>
-            </Pressable>
-          ) : null}
         </View>
       ))}
 
@@ -229,6 +233,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   merchant: { fontSize: 16, fontWeight: "600" },
+  receiptId: { fontSize: 15, fontWeight: "600", color: "#1f3a2e" },
   rail: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
   status: {
     fontSize: 12,
