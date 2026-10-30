@@ -11,6 +11,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Code changes land through a pull request. A task that does not change this repo does not need one.
 - 2026-10-29: Issue 2 sets receipt dates to `MM-DD-YYYY` and stores amounts as integer minor units.
 - 2026-10-29: Issue 3 publishes the receipt state machine. Queue acceptance is `Queued`. `Confirmed` only follows `serverConfirm` or `userConfirm`.
+- 2026-10-29: Issue 4 publishes idempotency and company switch. A lost success returns the same receipt. Logout clears the local queue.
 
 ## Accepted
 
