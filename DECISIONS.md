@@ -14,6 +14,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Issue 4 publishes idempotency and company switch. A lost success returns the same receipt. Logout clears the local queue.
 - 2026-10-29: Issue 5 publishes matching. Exact money, then merchant similarity. One transaction cannot take two receipts. A late processor result does not overwrite a user correction.
 - 2026-10-29: Issue 6 publishes the Expo sign-in shell. Cognito `USER_PASSWORD_AUTH`, tokens in SecureStore, logout clears the local queue.
+- 2026-10-29: Issue 7 publishes the receipt form. It stores a draft with integer minor units, an `MM-DD-YYYY` date, and a chosen synthetic image. The screen shows every receipt state. Saving and queueing never mark `Confirmed`. When Cognito env is absent, the sign-in screen can open that form as `northwind` without calling Cognito.
 
 ## Accepted
 
@@ -23,7 +24,7 @@ The app lives entirely inside `receipt-capture/`. Nothing for this proof of conc
 
 ### D2. Expo is the client
 
-The reviewer-facing client is Expo and TypeScript in `mobile/`, using expo-router and expo-secure-store. Sign-in is in-app `USER_PASSWORD_AUTH`. Tokens stay in SecureStore. Logout clears those tokens and the local queue. The receipt form and durable offline queue are later issues.
+The reviewer-facing client is Expo and TypeScript in `mobile/`, using expo-router and expo-secure-store. Sign-in is in-app `USER_PASSWORD_AUTH`. Tokens stay in SecureStore. Logout clears those tokens and the local queue. The receipt form captures merchant, amount, currency, an `MM-DD-YYYY` date, and one of the bundled synthetic images. It shows Draft, Queued, Uploading, Processing, Failed, NeedsReview, and Confirmed. This screen only creates a Draft and can move that draft to Queued. It does not mark Confirmed. The durable offline queue is a later issue.
 
 ### D3. Money is integer minor units
 

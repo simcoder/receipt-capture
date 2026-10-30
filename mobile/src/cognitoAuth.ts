@@ -89,9 +89,9 @@ export async function signInWithPassword(input: {
 }
 
 /** Logout drops every stored token and the in-memory queue. */
-export function afterLogout(queue: readonly QueuedReceipt[]): {
+export function afterLogout<T extends QueuedReceipt>(_queue: readonly T[]): {
   deleteKeys: readonly string[];
-  queue: QueuedReceipt[];
+  queue: T[];
 } {
   return { deleteKeys: SECURE_STORE_KEYS, queue: [] };
 }
