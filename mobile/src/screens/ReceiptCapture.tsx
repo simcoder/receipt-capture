@@ -123,21 +123,20 @@ export function ReceiptCapture(props: {
         <Text style={date ? styles.dateValue : styles.placeholder}>{date || "MM-DD-YYYY"}</Text>
       </Pressable>
       {dateOpen ? (
-        <DateTimePicker
-          accentColor="#0f381f"
-          display={Platform.OS === "ios" ? "inline" : "default"}
-          mode="date"
-          themeVariant="light"
-          value={dateFromStored(date, new Date())}
-          onChange={(event, next) => {
-            if (event.type === "dismissed" || !next) {
+        <View style={styles.picker}>
+          <DateTimePicker
+            accentColor="#0f381f"
+            display={Platform.OS === "ios" ? "inline" : "default"}
+            mode="date"
+            themeVariant="light"
+            value={dateFromStored(date, new Date())}
+            onDismiss={() => setDateOpen(false)}
+            onValueChange={(_event, next) => {
+              setDate(formatDateOnly(next));
               setDateOpen(false);
-              return;
-            }
-            setDate(formatDateOnly(next));
-            if (Platform.OS !== "ios") setDateOpen(false);
-          }}
-        />
+            }}
+          />
+        </View>
       ) : null}
 
       <Text style={styles.label}>{props.photoBase64 ? "Photo" : "Synthetic image"}</Text>
@@ -292,6 +291,13 @@ const styles = StyleSheet.create({
   },
   dateValue: { color: "#171f1c" },
   placeholder: { color: "#8e8e93" },
+  picker: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
   images: { flexDirection: "row", gap: 8 },
   imageCard: {
     flex: 1,
