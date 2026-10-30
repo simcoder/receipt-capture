@@ -10,7 +10,7 @@ Do not add modules at `mobile/src/` root. Put each file in the folder that alrea
 | --- | --- |
 | `mobile/app/` | expo-router routes only. A route re-exports a screen. |
 | `mobile/src/screens/` | Screens. |
-| `mobile/src/providers/` | React context. The signed-in token lives in `session-provider.tsx`. |
+| `mobile/src/providers/` | React context. The signed-in token lives in `session-provider.tsx`. The network banner state lives in `connectivity-provider.tsx`. |
 | `mobile/src/hooks/` | Hooks. API access is `useReceiptApi`. |
 | `mobile/src/api/client.ts` | The only `fetch` wrapper. |
 | `mobile/src/auth/` | Cognito sign-in. |
@@ -37,7 +37,7 @@ const rows = await api.getReceipts(companyId);
 
 `apiRequest` returns `{ ok, status, payload }`. A thrown `fetch` becomes `ApiTransportError`. An HTTP error is returned, not thrown. The caller treats status 500 and above as a transport failure and shows a 4xx message. The bearer token is the ID token.
 
-Do not add React Query.
+Do not add React Query. Do not add an offline switch. The banner follows the device network. A returning network does not submit a receipt.
 
 ## Names and packages
 

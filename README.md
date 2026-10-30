@@ -42,7 +42,7 @@ flowchart LR
 | --- | --- |
 | Client | Expo 57, expo-router, React 19, React Native 0.86, TypeScript 5.8 |
 | Sign-in | Cognito user pool, `USER_PASSWORD_AUTH`, no hosted UI. `custom:company_id` on the user. Tokens in expo-secure-store. |
-| Device copy | AsyncStorage for receipt metadata and the offline flag. Image bytes and tokens are not stored there. |
+| Device copy | AsyncStorage for receipt metadata. A banner is green when the device has a network and red when it does not. Image bytes and tokens are not stored there. |
 | Domain | TypeScript in `src/domain/`. Node 22 tests. Money is integer minor units. Dates are `MM-DD-YYYY`. |
 | API | API Gateway HTTP API. JWT authorizer checks the ID token audience. One Lambda, Node.js 24. |
 | Data | DynamoDB on demand. Receipts keyed by `companyId` and `receiptId`. Idempotency keyed by `companyId` and `idempotencyKey`. |
@@ -73,6 +73,7 @@ Started 2026-10-29. Spec 001, the plan that shipped, is [.spec/001-initial-poc.m
 | Spec 001 | Complete. Archived in [.spec/001-initial-poc.md](.spec/001-initial-poc.md). |
 | Spec 002 | [.spec/002-ux.md](.spec/002-ux.md). Issues 26–30. |
 | Home list | Issue 26. After sign-in, the screen lists that company's receipts from `GET /receipts`, with merchant, amount, date, and status. |
+| Connectivity banner | Issue 27. The Offline switch is gone. The banner is green online and red offline. A returning network does not submit. |
 
 ## Run the tests
 
@@ -93,7 +94,7 @@ npm install
 npx expo start --ios
 ```
 
-`--ios` opens the installed iOS Simulator. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito. Turn on **Offline**, save a draft, and queue it. The status rail is on the saved receipt. Stop Expo, start it again, and choose the same preview. The queue and the offline toggle come back. Log out clears that company's queue.
+`--ios` opens the installed iOS Simulator. The banner under the status bar is green while the Mac has a network and red when it does not. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito. Save a draft and queue it. With the banner green, queue sends the receipt to the API. With the banner red, queue uses the local fake. Turning the network back on does not send that receipt again. Stop Expo, start it again, and choose the same preview. The queue comes back. Log out clears that company's queue.
 
 Put the region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`. With no API URL, or when the API cannot be reached, **Queue receipt** uses the local fake. A lost success retries that same key and keeps the same receipt id.
 

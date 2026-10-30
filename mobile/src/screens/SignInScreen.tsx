@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { afterLogout } from "../auth/cognitoAuth";
 import { useReceiptApi } from "../hooks/use-receipt-api";
+import { useConnectivity } from "../providers/connectivity-provider";
 import { useSession } from "../providers/session-provider";
-import { clearCompanyQueue, loadLocalSession, saveOffline, saveQueue } from "../storage/localQueue";
+import { clearCompanyQueue, loadLocalSession, saveQueue } from "../storage/localQueue";
 import { deviceStore } from "../storage/deviceStore";
 import { queueDraft, type LocalReceipt } from "../receipts/receiptDraft";
 import { type CompanyReceipt } from "../receipts/receiptList";
@@ -16,11 +16,12 @@ import { HomeList } from "./HomeList";
 export default function SignInScreen() {
   const session = useSession();
   const api = useReceiptApi();
+  const { online } = useConnectivity();
+  const offline = !online;
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [receipts, setReceipts] = useState<LocalReceipt[]>([]);
   const [previewCompany, setPreviewCompany] = useState<string | null>(null);
-  const [offline, setOffline] = useState(false);
   const [queueReady, setQueueReady] = useState(false);
   const [canPersist, setCanPersist] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
@@ -89,7 +90,6 @@ export default function SignInScreen() {
       .then((loaded) => {
         if (cancelled) return;
         setReceipts(loaded.receipts);
-        setOffline(loaded.offline);
         setQueueError(null);
         setCanPersist(true);
         setQueueReady(true);
@@ -117,11 +117,6 @@ export default function SignInScreen() {
       }
     });
   }, [canPersist, companyId, receipts]);
-
-  useEffect(() => {
-    if (!canPersist) return;
-    void saveOffline(deviceStore, offline);
-  }, [canPersist, offline]);
 
   async function onLogout() {
     const cleared = afterLogout(receipts);
@@ -225,7 +220,7 @@ export default function SignInScreen() {
 
   if (idToken && !listReady) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={["bottom"]}>
         <ActivityIndicator />
       </SafeAreaView>
     );
@@ -233,8 +228,7 @@ export default function SignInScreen() {
 
   if (idToken) {
     return (
-      <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
-        <StatusBar style="dark" />
+      <SafeAreaView style={styles.screen} edges={["bottom"]}>
         <HomeList companyId={companyId} receipts={apiReceipts} error={listError} onLogout={onLogout} />
       </SafeAreaView>
     );
@@ -242,7 +236,7 @@ export default function SignInScreen() {
 
   if (showCapture && !queueReady) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={["bottom"]}>
         <ActivityIndicator />
       </SafeAreaView>
     );
@@ -250,15 +244,12 @@ export default function SignInScreen() {
 
   if (showCapture) {
     return (
-      <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
-        <StatusBar style="dark" />
+      <SafeAreaView style={styles.screen} edges={["bottom"]}>
         <ReceiptCapture
           companyId={companyId}
-          offline={offline}
           queueError={queueError}
           receipts={receipts}
           onChange={setReceipts}
-          onOfflineChange={setOffline}
           onQueue={(localId) => void queueAndSubmit(localId)}
           onConfirm={(localId, transactionId) => void onConfirm(localId, transactionId)}
           matchError={matchError}
@@ -269,8 +260,7 @@ export default function SignInScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.centered}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={styles.centered} edges={["bottom"]}>
       <Text style={styles.title}>Receipt capture</Text>
       <View style={styles.block}>
         <Text style={styles.hint}>Use northwind.demo or contoso.demo. Passwords are in infra/README.md.</Text>
