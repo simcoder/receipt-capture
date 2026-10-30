@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SYNTHETIC_IMAGES, type SyntheticImageId } from "../receipts/receiptDraft";
+import { showFakeReceipts } from "../receipts/showFakeReceipts";
 
 export function CaptureScreen(props: {
   error: string | null;
@@ -16,14 +17,18 @@ export function CaptureScreen(props: {
         <Text style={styles.libraryText}>Tap to choose from library</Text>
       </Pressable>
       {props.error ? <Text style={styles.error}>{props.error}</Text> : null}
-      <Text style={styles.label}>Use a fake receipt</Text>
-      <View style={styles.fakes}>
-        {SYNTHETIC_IMAGES.map((image) => (
-          <Pressable key={image.id} style={styles.fake} onPress={() => props.onFakeReceipt(image.id)}>
-            <Text>{image.label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      {showFakeReceipts() ? (
+        <>
+          <Text style={styles.label}>Use a fake receipt</Text>
+          <View style={styles.fakes}>
+            {SYNTHETIC_IMAGES.map((image) => (
+              <Pressable key={image.id} style={styles.fake} onPress={() => props.onFakeReceipt(image.id)}>
+                <Text>{image.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
     </View>
   );
 }

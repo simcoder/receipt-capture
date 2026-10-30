@@ -114,7 +114,9 @@ npm run seed:photos
 
 That folder already has cafe, fuel, and office. Add any other PNG or JPEG there and run `npm run seed:photos` again. The script sends every picture in the folder to the booted simulator.
 
-5. In the app, sign in. On a phone, **Capture** opens the camera. In the simulator there is no camera, so **Capture** stays on this screen and you use **Tap to choose from library**. That library now includes the seeded receipts. **Use a fake receipt** opens the form with cafe, fuel, or office without using the library. **Profile** shows the company name and **Log out**.
+5. In the app, sign in. On a phone, **Capture** opens the camera. In the simulator there is no camera, so **Capture** stays on this screen and you use **Tap to choose from library**. That library now includes the seeded receipts. **Profile** shows the company name and **Log out**.
+
+If seeding fails, set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` in `mobile/.env` and restart Expo. **Capture** then shows **Use a fake receipt** for cafe, fuel, and office. Leave that variable unset and those buttons stay hidden.
 
 The banner under the status bar is green while the Mac has a network and red when it does not. With the banner green, **Queue receipt** sends the receipt to the API. With the banner red, or when the API URL is missing, it uses the local fake. Turning the network back on does not send that receipt again. A lost success retries the same key and keeps the same receipt id.
 
