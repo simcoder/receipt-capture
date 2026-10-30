@@ -11,7 +11,7 @@ The stack name is `ReceiptCapturePoc`. It creates a Cognito user pool, two seede
 | `northwind.demo` | `Northwind-demo-1` | `northwind` |
 | `contoso.demo` | `Contoso-demo-1` | `contoso` |
 
-These are synthetic. The app client uses `USER_PASSWORD_AUTH`. There is no hosted UI.
+These are synthetic. The app client uses `USER_PASSWORD_AUTH`. There is no hosted UI. The transactions the fake processor matches against are listed in the repo [README](../README.md#seeded-transactions). `npm run seeds` from the repo root prints them.
 
 ## Commands
 

@@ -142,6 +142,22 @@ Passwords, for when the stack is deployed:
 
 They are demo passwords, not personal secrets.
 
+## Seeded transactions
+
+The fake processor matches the merchant, amount, and currency you type against this list. The photo is stored and is not read. Run this from the repo root to print the same list the API uses:
+
+```bash
+npm run seeds
+```
+
+| Company | Transaction | Merchant | Amount |
+| --- | --- | --- | --- |
+| `northwind` | `txn-blue-bottle` | Blue Bottle | 18.50 USD |
+| `northwind` | `txn-parking` | Airport Parking | 22.00 USD |
+| `contoso` | `txn-contoso-cafe` | Contoso Cafe | 9.75 USD |
+
+The amount and currency must match a seed for that company. A merchant score of 0.8 or higher comes back **Confirmed**. An equal name scores 1. A name that contains the other scores 0.8, so **Blue Bottle Coffee** at 18.50 USD confirms against Blue Bottle. A shared word below 0.8 comes back **NeedsReview**. **City Parking** at 22.00 USD shares "parking" with Airport Parking, so you confirm that seed or leave the receipt unmatched. A different amount, such as Northwind Cafe at 12.34 USD, comes back **NeedsReview** with nothing to pick. One transaction cannot take two receipts. The date and the notes do not change the result. The local fake uses this same list when the API cannot be reached.
+
 ## AI tools
 
 Cursor, with Grok 4.7, drafted the repo layout, domain module, CDK stack, and these notes. The domain rules were checked with `npm test` from this folder. The API rule copy was checked with `npm test` inside `infra/`. Nothing from an employer repository was copied. Deploy and tear down from `receipt-capture/infra`.
