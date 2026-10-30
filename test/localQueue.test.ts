@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { DomainError } from "../src/domain/errors.ts";
-import { captureDraft, queueDraft, type CaptureInput } from "../mobile/src/receiptDraft.ts";
+import { captureDraft, queueDraft, type CaptureInput } from "../mobile/src/receipts/receiptDraft.ts";
 import {
   clearCompanyQueue,
   loadLocalSession,
@@ -11,7 +11,7 @@ import {
   saveQueue,
   serializeQueue,
   type KeyValueStore,
-} from "../mobile/src/localQueue.ts";
+} from "../mobile/src/storage/localQueue.ts";
 
 function memoryStore(): KeyValueStore & { values: Map<string, string> } {
   const values = new Map<string, string>();

@@ -1,7 +1,8 @@
-import { applyProcessorResult, candidateMatches, type SeedTransaction } from "../../src/domain/matching.ts";
-import { resolveSubmit } from "../../src/domain/idempotency.ts";
-import type { ReceiptStatus } from "../../src/domain/receiptState.ts";
-import type { KeyValueStore } from "./localQueue.ts";
+import { applyProcessorResult, candidateMatches, type SeedTransaction } from "../../../src/domain/matching.ts";
+import { resolveSubmit } from "../../../src/domain/idempotency.ts";
+import type { ReceiptStatus } from "../../../src/domain/receiptState.ts";
+import { ApiTransportError, apiErrorMessage, apiRequest } from "../api/client.ts";
+import type { KeyValueStore } from "../storage/localQueue.ts";
 
 export const SEED_TRANSACTIONS: readonly SeedTransaction[] = [
   {
@@ -106,23 +107,12 @@ export async function submitReceipt(input: {
     return saveFake(input.store, input);
   }
 
-  const request = submitRequest({
-    apiUrl: input.apiUrl,
-    idToken: input.idToken ?? "",
-    idempotencyKey: input.idempotencyKey,
-    merchant: input.merchant,
-    amountMinor: input.amountMinor,
-    currency: input.currency,
-    date: input.date,
-  });
-  const fetchImpl = input.fetchImpl ?? fetch;
-
   try {
-    return await postReceipt(fetchImpl, request);
+    return await postReceipt(input);
   } catch (firstError) {
     if (!isTransportFailure(firstError)) throw firstError;
     try {
-      return await postReceipt(fetchImpl, request);
+      return await postReceipt(input);
     } catch (secondError) {
       if (!isTransportFailure(secondError)) throw secondError;
       return saveFake(input.store, input);
@@ -134,31 +124,33 @@ export async function clearFake(store: KeyValueStore, companyId: string): Promis
   await store.removeItem(fakeKey(companyId));
 }
 
-class SubmitTransportError extends Error {
-  constructor() {
-    super("api unavailable");
-    this.name = "SubmitTransportError";
-  }
-}
-
-async function postReceipt(
-  fetchImpl: typeof fetch,
-  request: { url: string; init: RequestInit },
-): Promise<SubmitResult> {
-  let response: Response;
-  try {
-    response = await fetchImpl(request.url, request.init);
-  } catch {
-    throw new SubmitTransportError();
-  }
-  const payload: unknown = await response.json().catch(() => null);
-  if (response.status >= 500) {
-    throw new SubmitTransportError();
-  }
-  if (!response.ok) {
-    const message = apiErrorMessage(payload);
-    throw new Error(message);
-  }
+async function postReceipt(input: {
+  apiUrl: string;
+  idToken: string | null;
+  idempotencyKey: string;
+  merchant: string;
+  amountMinor: number;
+  currency: string;
+  date: string;
+  fetchImpl?: typeof fetch;
+}): Promise<SubmitResult> {
+  const result = await apiRequest({
+    apiUrl: input.apiUrl,
+    idToken: input.idToken,
+    path: "/receipts",
+    method: "POST",
+    headers: { "idempotency-key": input.idempotencyKey },
+    body: {
+      merchant: input.merchant,
+      amount: amountDecimal(input.amountMinor),
+      currency: input.currency,
+      date: input.date,
+    },
+    fetchImpl: input.fetchImpl,
+  });
+  if (result.status >= 500) throw new ApiTransportError();
+  if (!result.ok) throw new Error(apiErrorMessage(result.payload, "Submit failed"));
+  const payload = result.payload;
   if (!payload || typeof payload !== "object" || !("receipt" in payload)) {
     throw new Error("Submit failed");
   }
@@ -290,13 +282,6 @@ async function loadFake(store: KeyValueStore, companyId: string): Promise<FakeSt
   return { records: records as FakeState["records"], receipts: receipts as StoredReceipt[] };
 }
 
-function apiErrorMessage(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "Submit failed";
-  if ("error" in payload && typeof payload.error === "string") return payload.error;
-  if ("message" in payload && typeof payload.message === "string") return payload.message;
-  return "Submit failed";
-}
-
 function isTransportFailure(error: unknown): boolean {
-  return error instanceof SubmitTransportError;
+  return error instanceof ApiTransportError;
 }

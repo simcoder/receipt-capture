@@ -6,7 +6,7 @@ import {
   initiateAuthBody,
   SECURE_STORE_KEYS,
   signInWithPassword,
-} from "../mobile/src/cognitoAuth.ts";
+} from "../mobile/src/auth/cognitoAuth.ts";
 
 function fakeIdToken(claims: Record<string, unknown>): string {
   const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");

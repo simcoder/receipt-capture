@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
-import { openMatches } from "./matchReceipt";
+import { openMatches } from "../receipts/matchReceipt";
 import {
   captureDraft,
   formatMoney,
@@ -9,7 +9,7 @@ import {
   syntheticImageLabel,
   type LocalReceipt,
   type SyntheticImageId,
-} from "./receiptDraft";
+} from "../receipts/receiptDraft";
 
 const IMAGE_COLORS: Record<SyntheticImageId, string> = {
   "cafe-receipt": "#8a5a44",

@@ -1,7 +1,7 @@
-import { DomainError } from "../../src/domain/errors.ts";
-import { parseDateOnly } from "../../src/domain/dateOnly.ts";
-import { RECEIPT_STATUSES, type ReceiptStatus } from "../../src/domain/receiptState.ts";
-import { SYNTHETIC_IMAGES, type LocalReceipt, type SyntheticImageId } from "./receiptDraft.ts";
+import { DomainError } from "../../../src/domain/errors.ts";
+import { parseDateOnly } from "../../../src/domain/dateOnly.ts";
+import { RECEIPT_STATUSES, type ReceiptStatus } from "../../../src/domain/receiptState.ts";
+import { SYNTHETIC_IMAGES, type LocalReceipt, type SyntheticImageId } from "../receipts/receiptDraft.ts";
 
 export const OFFLINE_KEY = "receipt-capture.offline";
 

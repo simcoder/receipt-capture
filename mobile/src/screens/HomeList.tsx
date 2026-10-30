@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { formatMoney } from "./receiptDraft";
-import type { CompanyReceipt } from "./receiptList";
+import { formatMoney } from "../receipts/receiptDraft";
+import type { CompanyReceipt } from "../receipts/receiptList";
 
 export function HomeList(props: {
   companyId: string;

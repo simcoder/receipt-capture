@@ -1,6 +1,7 @@
-import { parseDateOnly } from "../../src/domain/dateOnly.ts";
-import { DomainError } from "../../src/domain/errors.ts";
-import { RECEIPT_STATUSES, type ReceiptStatus } from "../../src/domain/receiptState.ts";
+import { parseDateOnly } from "../../../src/domain/dateOnly.ts";
+import { DomainError } from "../../../src/domain/errors.ts";
+import { RECEIPT_STATUSES, type ReceiptStatus } from "../../../src/domain/receiptState.ts";
+import { apiErrorMessage, apiRequest } from "../api/client.ts";
 
 const STATUSES = new Set<string>(RECEIPT_STATUSES);
 
@@ -25,21 +26,15 @@ export async function fetchCompanyReceipts(input: {
   if (!input.apiUrl.trim()) throw new DomainError("API URL is required");
   if (!input.idToken.trim()) throw new DomainError("ID token is required");
 
-  const fetchImpl = input.fetchImpl ?? fetch;
-  const response = await fetchImpl(`${input.apiUrl.replace(/\/$/, "")}/receipts`, {
+  const result = await apiRequest({
+    apiUrl: input.apiUrl,
+    idToken: input.idToken,
+    path: "/receipts",
     method: "GET",
-    headers: { authorization: `Bearer ${input.idToken}` },
+    fetchImpl: input.fetchImpl,
   });
-  const payload: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const message =
-      payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
-        ? payload.error
-        : payload && typeof payload === "object" && "message" in payload && typeof payload.message === "string"
-          ? payload.message
-          : "Could not load receipts";
-    throw new Error(message);
-  }
+  if (!result.ok) throw new Error(apiErrorMessage(result.payload, "Could not load receipts"));
+  const payload = result.payload;
   if (!payload || typeof payload !== "object" || !("receipts" in payload) || !Array.isArray(payload.receipts)) {
     throw new DomainError("receipt list is invalid");
   }

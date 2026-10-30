@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { DomainError } from "../src/domain/errors.ts";
-import { fetchCompanyReceipts } from "../mobile/src/receiptList.ts";
+import { fetchCompanyReceipts } from "../mobile/src/receipts/receiptList.ts";
 
 const northwind = {
   receiptId: "receipt-1",

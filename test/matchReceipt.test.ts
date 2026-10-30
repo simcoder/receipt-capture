@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { DomainError } from "../src/domain/errors.ts";
-import type { KeyValueStore } from "../mobile/src/localQueue.ts";
-import { applyLateProcessor, confirmReceiptMatch, openMatches } from "../mobile/src/matchReceipt.ts";
+import type { KeyValueStore } from "../mobile/src/storage/localQueue.ts";
+import { applyLateProcessor, confirmReceiptMatch, openMatches } from "../mobile/src/receipts/matchReceipt.ts";
 
 function memoryStore(): KeyValueStore {
   const values = new Map<string, string>();
