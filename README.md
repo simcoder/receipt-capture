@@ -158,7 +158,7 @@ npm run seeds
 
 The amount and currency must match a seed for that company. The receipt list shows that score as a decimal and a percent, such as `0.80 (80%)`. A merchant score of 0.8 or higher comes back **Confirmed**. An equal name scores 1. A name that contains the other scores 0.8, so **Blue Bottle Coffee** at 18.50 USD confirms against Blue Bottle. A shared word below 0.8 comes back **NeedsReview**. **City Parking** at 22.00 USD shares "parking" with Airport Parking, so you confirm that seed or leave the receipt unmatched. A different amount, such as Northwind Cafe at 12.34 USD, comes back **NeedsReview** with nothing to pick. One transaction cannot take two receipts. The date and the notes do not change the result. The local fake uses this same list when the API cannot be reached.
 
-Merchant **Fail Upload** is not a transaction. The first submit is **Failed**, with no score, and a toast says **Upload failed. Try again.** **Retry** on that row sends the same receipt through the processor. It then comes back **NeedsReview** at `0.00 (0%)`.
+Merchant **Fail Upload** is not a transaction. The first submit stays on the form as **Failed**, with no score. A toast says **Upload failed. Try again.** **Retry** sends that same receipt through the processor. It then comes back **NeedsReview** at `0.00 (0%)`.
 
 ## AI tools
 

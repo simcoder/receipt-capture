@@ -34,6 +34,7 @@ export function ReceiptCapture(props: {
   photoBase64?: string;
   onBack?: () => void;
   onSubmit?: (draft: LocalReceipt) => Promise<void>;
+  onRetry?: () => Promise<void>;
   online?: boolean;
 }) {
   const [merchant, setMerchant] = useState("");
@@ -47,6 +48,15 @@ export function ReceiptCapture(props: {
   const [saving, setSaving] = useState(false);
 
   async function onSave() {
+    if (props.onRetry) {
+      setSaving(true);
+      try {
+        await props.onRetry();
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     setError(null);
     try {
       const draft = captureDraft({
@@ -183,13 +193,19 @@ export function ReceiptCapture(props: {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Pressable
-        accessibilityLabel={captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })}
+        accessibilityLabel={
+          props.onRetry
+            ? "Retry"
+            : captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })
+        }
         style={styles.primary}
         onPress={() => void onSave()}
         disabled={saving}
       >
         <Text style={styles.primaryText}>
-          {captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })}
+          {props.onRetry
+            ? "Retry"
+            : captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })}
         </Text>
       </Pressable>
 

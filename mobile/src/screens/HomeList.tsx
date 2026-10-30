@@ -35,9 +35,10 @@ export function HomeList(props: {
               {body}
               <Pressable
                 accessibilityLabel={`Retry ${receipt.merchant}`}
+                style={styles.retry}
                 onPress={() => props.onRetry(receipt.receiptId)}
               >
-                <Text style={styles.retry}>Retry</Text>
+                <Text style={styles.retryText}>Retry</Text>
               </Pressable>
             </View>
           );
@@ -79,7 +80,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   merchant: { fontSize: 16, fontWeight: "600" },
-  retry: { color: "#0f381f", fontWeight: "600", marginTop: 4 },
+  retry: {
+    marginTop: 8,
+    backgroundColor: "#0f381f",
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  retryText: { color: "#fff", fontWeight: "600" },
   status: {
     alignSelf: "flex-start",
     marginTop: 4,

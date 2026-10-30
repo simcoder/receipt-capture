@@ -36,6 +36,7 @@ export default function SignInScreen() {
   const [apiReceipts, setApiReceipts] = useState<CompanyReceipt[]>([]);
   const [listError, setListError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [failedReceiptId, setFailedReceiptId] = useState<string | null>(null);
   const [listReady, setListReady] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [visit, setVisit] = useState<{ imageId: ReceiptImageId; photoBase64?: string } | null>(null);
@@ -197,7 +198,14 @@ export default function SignInScreen() {
       submitSource: result.source,
       ...(result.matchedTransactionId ? { matchedTransactionId: result.matchedTransactionId } : {}),
     });
-    if (result.status === "Failed") setToast("Upload failed. Try again.");
+    if (result.status === "Failed") {
+      setQueueError("Upload failed. Try again.");
+      setToast("Upload failed. Try again.");
+      setFailedReceiptId(result.receiptId);
+      return result.receiptId;
+    }
+    setFailedReceiptId(null);
+    return null;
   }
 
   async function submitVisit(draft: LocalReceipt) {
@@ -213,10 +221,12 @@ export default function SignInScreen() {
       return;
     }
     try {
-      await send(queued);
+      const failedId = await send(queued);
+      if (failedId) return;
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : "Could not submit the receipt";
       setQueueError(message);
+      setToast(message);
       throw new Error(message);
     }
     setVisit(null);
@@ -242,6 +252,7 @@ export default function SignInScreen() {
   async function retryReceipt(receiptId: string) {
     if (!companyId) return;
     setListError(null);
+    setQueueError(null);
     try {
       const result = await api.retry({
         store: deviceStore,
@@ -262,10 +273,16 @@ export default function SignInScreen() {
         ),
       );
       setToast(null);
+      setFailedReceiptId(null);
+      setVisit(null);
+      setTab("home");
       const refreshed = await api.getReceipts(companyId).catch(() => null);
       if (refreshed) setApiReceipts(refreshed);
     } catch (retryError) {
-      setListError(retryError instanceof Error ? retryError.message : "Could not retry the receipt");
+      const message = retryError instanceof Error ? retryError.message : "Could not retry the receipt";
+      setListError(message);
+      setQueueError(message);
+      setToast("Upload failed. Try again.");
     }
   }
 
@@ -348,12 +365,6 @@ export default function SignInScreen() {
       });
     }
   }, [offline, idToken, companyId, queueReady]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   if (session.busy && !showCapture) {
     return (
@@ -438,11 +449,6 @@ export default function SignInScreen() {
           ) : null}
           {tab === "profile" ? <ProfileScreen companyId={companyId} onLogout={onLogout} /> : null}
         </View>
-        {toast ? (
-          <Pressable accessibilityRole="alert" style={styles.toast} onPress={() => setToast(null)}>
-            <Text style={styles.toastText}>{toast}</Text>
-          </Pressable>
-        ) : null}
         <AppMenu
           tab={tab}
           onHome={() => setTab("home")}
@@ -467,6 +473,7 @@ export default function SignInScreen() {
               photoBase64={visit.photoBase64}
               onBack={() => setVisit(null)}
               onSubmit={submitVisit}
+              onRetry={failedReceiptId ? () => retryReceipt(failedReceiptId) : undefined}
               online={online}
             />
           </CaptureSheet>
@@ -480,6 +487,11 @@ export default function SignInScreen() {
               onConfirm={(transactionId) => void confirmReview(review.receiptId, transactionId)}
             />
           </CaptureSheet>
+        ) : null}
+        {toast ? (
+          <Pressable accessibilityRole="alert" style={styles.toast} onPress={() => setToast(null)}>
+            <Text style={styles.toastText}>{toast}</Text>
+          </Pressable>
         ) : null}
       </SafeAreaView>
     );
