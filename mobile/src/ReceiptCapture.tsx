@@ -24,7 +24,6 @@ export function ReceiptCapture(props: {
   onChange: (receipts: LocalReceipt[]) => void;
   onOfflineChange: (offline: boolean) => void;
   onQueue: (localId: string) => void;
-  onSubmit: (localId: string) => void;
   onLogout: () => void;
 }) {
   const [merchant, setMerchant] = useState("");
@@ -171,11 +170,7 @@ export function ReceiptCapture(props: {
             <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
               <Text>Queue receipt</Text>
             </Pressable>
-          ) : (
-            <Pressable style={styles.secondary} onPress={() => props.onSubmit(receipt.localId)}>
-              <Text>Submit again</Text>
-            </Pressable>
-          )}
+          ) : null}
           <Text style={styles.label}>Status</Text>
           <View style={styles.rail}>
             {RECEIPT_STATUSES.map((status) => {

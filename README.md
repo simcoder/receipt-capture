@@ -45,7 +45,7 @@ npx expo start --ios
 
 `--ios` opens the installed iOS Simulator. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito. Turn on **Offline**, save a draft, and queue it. The status rail is on the saved receipt. Stop Expo, start it again, and choose the same preview. The queue and the offline toggle come back. Log out clears that company's queue.
 
-Put the region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`. With no API URL, or when the API cannot be reached, submit uses the local fake. Queue a receipt, then tap **Submit again**. The receipt id stays the same.
+Put the region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`. With no API URL, or when the API cannot be reached, **Queue receipt** uses the local fake. A lost success retries that same key and keeps the same receipt id.
 
 ## Companies
 

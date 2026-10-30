@@ -175,19 +175,7 @@ export default function SignInScreen() {
         idempotencyKey: current.idempotencyKey ?? `local-${current.localId}`,
       };
       replaceReceipt(queued);
-      if (offline) return;
       await send(queued);
-    } catch (submitError) {
-      setQueueError(submitError instanceof Error ? submitError.message : "Could not submit the receipt");
-    }
-  }
-
-  async function submitExisting(localId: string) {
-    const current = receipts.find((item) => item.localId === localId);
-    if (!current) return;
-    setQueueError(null);
-    try {
-      await send(current);
     } catch (submitError) {
       setQueueError(submitError instanceof Error ? submitError.message : "Could not submit the receipt");
     }
@@ -221,7 +209,6 @@ export default function SignInScreen() {
           onChange={setReceipts}
           onOfflineChange={setOffline}
           onQueue={(localId) => void queueAndSubmit(localId)}
-          onSubmit={(localId) => void submitExisting(localId)}
           onLogout={onLogout}
         />
       </SafeAreaView>
