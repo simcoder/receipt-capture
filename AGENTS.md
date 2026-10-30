@@ -17,6 +17,11 @@ Do not add modules at `mobile/src/` root. Put each file in the folder that alrea
 | `mobile/src/receipts/` | Draft, list, submit, and match. Plain functions, tested without React. |
 | `mobile/src/storage/` | The device queue. Tokens stay in SecureStore. |
 | `src/domain/` | Money, dates, state, idempotency, and matching. |
+| `portal/src/screens/` | Review portal screens. |
+| `portal/src/providers/` | The portal session. The ID token stays in memory. |
+| `portal/src/hooks/` | `useReceiptApi` for the portal. |
+| `portal/src/api/client.ts` | The portal `fetch` wrapper. Do not import `mobile/`. |
+| `portal/src/receipts/` | Parse and format receipts. Plain functions, tested without React. |
 
 `mobile/app/index.tsx` stays a one-line re-export. New UI goes in `mobile/src/screens/`.
 

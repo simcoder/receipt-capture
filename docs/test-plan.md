@@ -2,23 +2,24 @@
 
 This records what was tested against the assignment. A reviewer can capture a synthetic receipt, enter the fields, keep the work when the network is down, submit or queue it, see whether the server confirmed it, and match it or leave it unmatched. The state diagram is Draft, Queued, Uploading, Processing, Failed, NeedsReview, and Confirmed. A local queue must never be shown as Confirmed.
 
-Specs stay the shipped rules: [.spec/001-initial-poc.md](../.spec/001-initial-poc.md) and [.spec/002-ux.md](../.spec/002-ux.md). This document does not add product behavior.
+Specs stay the shipped rules: [.spec/001-initial-poc.md](../.spec/001-initial-poc.md), [.spec/002-ux.md](../.spec/002-ux.md), and [.spec/003-portal.md](../.spec/003-portal.md). This document does not add product behavior.
 
 ## How to run
 
-From `receipt-capture/`, after `npm install` and `npm ci --prefix infra`:
+From `receipt-capture/`, after `npm install`, `npm ci --prefix infra`, and `npm ci --prefix portal`:
 
 ```bash
 npm run test:all
 ```
 
-That runs three commands and prints how many passed:
+That runs four commands and prints how many passed:
 
 1. Domain unit tests (`npm test`).
 2. Typecheck (`npm run typecheck`).
 3. API rule tests (`npm test` in `infra/`).
+4. Portal typecheck (`npm run typecheck` in `portal/`).
 
-A failing command stops the run and the process exits non-zero. Pull requests and pushes to `main` run the same command in GitHub Actions. The check on the pull request is green when all three pass and red when one fails. No AWS credentials and no Expo build are required.
+A failing command stops the run and the process exits non-zero. Pull requests and pushes to `main` run the same command in GitHub Actions. The check on the pull request is green when all four pass and red when one fails. No AWS credentials and no Expo build are required.
 
 The simulator walk is `npm run record:simulator` after `npm run ios`. It needs Maestro (`curl -Ls https://get.maestro.mobile.dev | bash`) and a JDK (`brew install openjdk@21`). The iOS Simulator must be booted and the app already open in Expo Go. The command runs `maestro/walk.yaml`, checks the screen, and writes `maestro/recordings/walk-<time>.mp4`. Commit that mp4 after a local run. Debug screenshots under `maestro/recordings/debug-*` stay off git. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` and restart Expo so the recording includes City Parking. Without that variable the recording still checks that Capture stays on the photo library.
 

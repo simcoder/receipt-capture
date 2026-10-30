@@ -4,6 +4,7 @@ const steps = [
   { command: "npm", args: ["test"] },
   { command: "npm", args: ["run", "typecheck"] },
   { command: "npm", args: ["test", "--prefix", "infra"] },
+  { command: "npm", args: ["run", "typecheck", "--prefix", "portal"] },
 ];
 
 let passed = 0;
