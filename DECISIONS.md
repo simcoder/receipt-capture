@@ -15,6 +15,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Issue 5 publishes matching. Exact money, then merchant similarity. One transaction cannot take two receipts. A late processor result does not overwrite a user correction.
 - 2026-10-29: Issue 6 publishes the Expo sign-in shell. Cognito `USER_PASSWORD_AUTH`, tokens in SecureStore, logout clears the local queue.
 - 2026-10-29: Issue 7 publishes the receipt form. It stores a draft with integer minor units, an `MM-DD-YYYY` date, and a chosen synthetic image. The screen shows every receipt state. Saving and queueing never mark `Confirmed`. When Cognito env is absent, the sign-in screen can open that form as `northwind` without calling Cognito.
+- 2026-10-29: Issue 8 publishes the offline queue. Receipt metadata and the offline flag are stored in AsyncStorage, per company. Tokens stay in SecureStore. Receipt image bytes are not stored. Logout clears that company's queue. Relaunch loads the same queue.
 
 ## Accepted
 
@@ -24,7 +25,7 @@ The app lives entirely inside `receipt-capture/`. Nothing for this proof of conc
 
 ### D2. Expo is the client
 
-The reviewer-facing client is Expo and TypeScript in `mobile/`, using expo-router and expo-secure-store. Sign-in is in-app `USER_PASSWORD_AUTH`. Tokens stay in SecureStore. Logout clears those tokens and the local queue. The receipt form captures merchant, amount, currency, an `MM-DD-YYYY` date, and one of the bundled synthetic images. It shows Draft, Queued, Uploading, Processing, Failed, NeedsReview, and Confirmed. This screen only creates a Draft and can move that draft to Queued. It does not mark Confirmed. The durable offline queue is a later issue.
+The reviewer-facing client is Expo and TypeScript in `mobile/`, using expo-router and expo-secure-store. Sign-in is in-app `USER_PASSWORD_AUTH`. Tokens stay in SecureStore. Logout clears those tokens and the local queue. The receipt form captures merchant, amount, currency, an `MM-DD-YYYY` date, and one of the bundled synthetic images. It shows Draft, Queued, Uploading, Processing, Failed, NeedsReview, and Confirmed. This screen only creates a Draft and can move that draft to Queued. It does not mark Confirmed. The offline toggle and the durable queue are in AsyncStorage. See D16.
 
 ### D3. Money is integer minor units
 
@@ -78,6 +79,10 @@ The API stores an optional image under `quarantine/{companyId}/{receiptId}` as `
 
 Anything that changes this repo is a pull request into `main`. A task that does not change the repo does not need one. Do not commit that work straight to `main`.
 
+### D16. The on-device queue stores metadata
+
+Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, synthetic image id, and status. The offline flag lives under `receipt-capture.offline` and survives relaunch. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
+
 ## Out of scope
 
 Each item stays out until a later decision says otherwise.
@@ -96,6 +101,5 @@ Each item stays out until a later decision says otherwise.
 
 ## Still open
 
-- Where the on-device queue is stored. Metadata may persist locally. Tokens and receipt images must not sit in ordinary AsyncStorage or logs. The Expo issue decides the store.
 - The exact HTTP contract and local fake. Written with the client wiring issue, after **Build this**.
 - The five-minute demo script. Written after the deployed path works.
