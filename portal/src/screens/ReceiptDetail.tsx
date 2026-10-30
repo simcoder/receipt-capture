@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useReceiptApi } from "../hooks/use-receipt-api.ts";
-import { useSession } from "../providers/session.tsx";
 import { openMatchChoices } from "../receipts/choices.ts";
 import { formatConfidence, formatMoney, type PortalReceipt, type PortalTransaction } from "../receipts/receipts.ts";
 
 export function ReceiptDetail() {
   const { receiptId = "" } = useParams();
-  const session = useSession();
   const api = useReceiptApi();
   const [receipt, setReceipt] = useState<PortalReceipt | null>(null);
   const [transactions, setTransactions] = useState<PortalTransaction[]>([]);
@@ -72,12 +70,7 @@ export function ReceiptDetail() {
   return (
     <main className="page">
       <p><Link to="/">Receipts</Link></p>
-      <header>
-        <h1>{receipt.merchant}</h1>
-        <button type="button" onClick={session.logOut}>
-          Log out
-        </button>
-      </header>
+      <h1>{receipt.merchant}</h1>
       <dl>
         <dt>Amount</dt>
         <dd>{formatMoney(receipt.amountMinor, receipt.currency)}</dd>

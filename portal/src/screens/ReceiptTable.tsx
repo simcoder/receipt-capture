@@ -31,15 +31,7 @@ export function ReceiptTable() {
 
   return (
     <main className="page">
-      <header>
-        <div>
-          <h1>Receipts</h1>
-          <p>{session.companyId}</p>
-        </div>
-        <button type="button" onClick={session.logOut}>
-          Log out
-        </button>
-      </header>
+      <h1>Receipts</h1>
       {error ? <p className="error">{error}</p> : null}
       {loading ? <p>Loading receipts</p> : null}
       {!loading && !error && receipts.length === 0 ? <p>No receipts yet</p> : null}

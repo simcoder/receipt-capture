@@ -19,11 +19,59 @@ body {
   max-width: 420px;
 }
 
-header {
+.bar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #dbe3de;
+  position: sticky;
+  top: 0;
+}
+
+.bar-title {
+  color: #171f1c;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.account {
+  position: relative;
+}
+
+.account-button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.account-menu {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid #dbe3de;
+  border-radius: 8px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(23, 31, 28, 0.08);
+}
+
+.account-menu p {
+  margin: 0;
+  color: #616b66;
+  font-size: 13px;
+}
+
+.account-menu strong {
+  font-size: 16px;
 }
 
 h1 {
