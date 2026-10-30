@@ -17,6 +17,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Issue 7 publishes the receipt form. It stores a draft with integer minor units, an `MM-DD-YYYY` date, and a chosen synthetic image. The screen shows every receipt state. Saving and queueing never mark `Confirmed`. When Cognito env is absent, the sign-in screen can open that form as `northwind` without calling Cognito.
 - 2026-10-29: Issue 8 publishes the offline queue. Receipt metadata and the offline flag are stored in AsyncStorage, per company. Tokens stay in SecureStore. Receipt image bytes are not stored. Logout clears that company's queue. Relaunch loads the same queue.
 - 2026-10-29: Issue 9 publishes the CDK stack in `infra/` and deploys `ReceiptCapturePoc` from that folder. The Lambda date copy is `MM-DD-YYYY`, matching the domain. Tear down with `npm run destroy` in `infra/`.
+- 2026-10-30: Issue 10 wires submit to `POST /receipts` with `Idempotency-Key`. A lost success is retried with the same key and returns the same receipt. If the API cannot be reached, the app uses a local fake with that same rule.
 
 ## Accepted
 
@@ -70,7 +71,7 @@ CDK source, the Lambda, and the cleanup steps live in `infra/` so they can be fo
 
 ### D13. Reviewer fallback does not require AWS
 
-`npm test` already runs with no cloud account. `npx expo start` will be able to use a local fake API when the client exists. The deployed API is the production-like path.
+`npm test` already runs with no cloud account. Submit sends `Idempotency-Key` to `POST /receipts` when the API URL and access token are present. A retry after a lost success uses that same key and returns the same receipt. If the device is offline, the API URL is missing, or the API cannot be reached, `npx expo start` uses a local fake with the same rule. The deployed API is the production-like path.
 
 ### D14. Uploaded files stay in quarantine
 
@@ -82,7 +83,11 @@ Anything that changes this repo is a pull request into `main`. A task that does 
 
 ### D16. The on-device queue stores metadata
 
-Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, synthetic image id, and status. The offline flag lives under `receipt-capture.offline` and survives relaunch. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
+Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, synthetic image id, status, and, once submit has run, the idempotency key, receipt id, replay flag, and submit source. The offline flag lives under `receipt-capture.offline` and survives relaunch. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
+
+### D17. Submit uses one Idempotency-Key, then a local fake
+
+The client assigns one key per local receipt and sends it as `Idempotency-Key` on `POST /receipts`. The body is merchant, a decimal amount, currency, and `MM-DD-YYYY`. Image bytes are not sent. A lost success retries that same key once, and the API returns the stored receipt. If that retry also fails, or the API URL or access token is missing, the local fake stores the result under `receipt-capture.fake.{companyId}` and returns the same receipt on the next submit. Logout clears that company's fake store. The client copies the returned status. It does not mark Confirmed on its own.
 
 ## Out of scope
 
@@ -102,5 +107,4 @@ Each item stays out until a later decision says otherwise.
 
 ## Still open
 
-- The exact HTTP contract and local fake. Written with the client wiring issue, after **Build this**.
 - The five-minute demo script. Written after the deployed path works.

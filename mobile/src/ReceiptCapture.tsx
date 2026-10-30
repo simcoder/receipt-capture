@@ -3,7 +3,6 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from
 import {
   captureDraft,
   formatMoney,
-  queueDraft,
   RECEIPT_STATUSES,
   SYNTHETIC_IMAGES,
   syntheticImageLabel,
@@ -24,6 +23,8 @@ export function ReceiptCapture(props: {
   receipts: readonly LocalReceipt[];
   onChange: (receipts: LocalReceipt[]) => void;
   onOfflineChange: (offline: boolean) => void;
+  onQueue: (localId: string) => void;
+  onSubmit: (localId: string) => void;
   onLogout: () => void;
 }) {
   const [merchant, setMerchant] = useState("");
@@ -58,13 +59,7 @@ export function ReceiptCapture(props: {
 
   function onQueue(localId: string) {
     setError(null);
-    try {
-      props.onChange(
-        props.receipts.map((receipt) => (receipt.localId === localId ? queueDraft(receipt) : receipt)),
-      );
-    } catch (queueError) {
-      setError(queueError instanceof Error ? queueError.message : "Could not queue the receipt");
-    }
+    props.onQueue(localId);
   }
 
   return (
@@ -174,11 +169,18 @@ export function ReceiptCapture(props: {
             })}
           </View>
           <Text style={styles.note}>Confirmed is set by the server or by a review correction.</Text>
+          {receipt.receiptId ? <Text>Receipt {receipt.receiptId}</Text> : null}
+          {receipt.replayed ? <Text>Same receipt</Text> : null}
+          {receipt.submitSource === "local-fake" ? <Text>Local fake</Text> : null}
           {receipt.status === "Draft" ? (
             <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
               <Text>Queue receipt</Text>
             </Pressable>
-          ) : null}
+          ) : (
+            <Pressable style={styles.secondary} onPress={() => props.onSubmit(receipt.localId)}>
+              <Text>Submit again</Text>
+            </Pressable>
+          )}
         </View>
       ))}
 

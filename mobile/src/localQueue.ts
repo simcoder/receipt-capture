@@ -39,8 +39,8 @@ export function queueKey(companyId: string): string {
 }
 
 /** Metadata only. Tokens and image bytes are not copied into the stored record. */
-export function toQueueMetadata(receipt: LocalReceipt): Record<(typeof METADATA_KEYS)[number], string | number> {
-  return {
+export function toQueueMetadata(receipt: LocalReceipt): Record<string, string | number | boolean> {
+  const metadata: Record<string, string | number | boolean> = {
     localId: receipt.localId,
     companyId: receipt.companyId,
     merchant: receipt.merchant,
@@ -50,6 +50,11 @@ export function toQueueMetadata(receipt: LocalReceipt): Record<(typeof METADATA_
     imageId: receipt.imageId,
     status: receipt.status,
   };
+  if (receipt.idempotencyKey) metadata.idempotencyKey = receipt.idempotencyKey;
+  if (receipt.receiptId) metadata.receiptId = receipt.receiptId;
+  if (receipt.replayed) metadata.replayed = true;
+  if (receipt.submitSource) metadata.submitSource = receipt.submitSource;
+  return metadata;
 }
 
 export function serializeQueue(receipts: readonly LocalReceipt[]): string {
@@ -124,7 +129,7 @@ function parseReceipt(value: unknown, companyId: string): LocalReceipt {
     throw new DomainError("amountMinor must be a non-negative integer");
   }
 
-  return {
+  const parsed: LocalReceipt = {
     localId,
     companyId: storedCompany,
     merchant,
@@ -134,11 +139,28 @@ function parseReceipt(value: unknown, companyId: string): LocalReceipt {
     imageId: imageId as SyntheticImageId,
     status: status as ReceiptStatus,
   };
+  const idempotencyKey = optionalString(record.idempotencyKey);
+  const receiptId = optionalString(record.receiptId);
+  if (idempotencyKey) parsed.idempotencyKey = idempotencyKey;
+  if (receiptId) parsed.receiptId = receiptId;
+  if (record.replayed === true) parsed.replayed = true;
+  if (record.submitSource === "api" || record.submitSource === "local-fake") {
+    parsed.submitSource = record.submitSource;
+  }
+  return parsed;
 }
 
 function requiredString(value: unknown, label: string): string {
   if (typeof value !== "string" || !value.trim()) {
     throw new DomainError(`${label} is required`);
+  }
+  return value;
+}
+
+function optionalString(value: unknown): string | undefined {
+  if (value == null || value === "") return undefined;
+  if (typeof value !== "string") {
+    throw new DomainError("optional queue field must be a string");
   }
   return value;
 }

@@ -18,16 +18,19 @@ import {
 } from "../src/cognitoAuth";
 import { deviceStore } from "../src/deviceStore";
 import { clearCompanyQueue, loadLocalSession, saveOffline, saveQueue } from "../src/localQueue";
+import { queueDraft, type LocalReceipt } from "../src/receiptDraft";
 import { ReceiptCapture } from "../src/ReceiptCapture";
-import type { LocalReceipt } from "../src/receiptDraft";
+import { clearFake, submitReceipt } from "../src/submitReceipt";
 
 const region = process.env.EXPO_PUBLIC_COGNITO_REGION ?? "";
 const clientId = process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID ?? "";
+const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
 
 export default function SignInScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [idToken, setIdToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [receipts, setReceipts] = useState<LocalReceipt[]>([]);
   const [previewCompany, setPreviewCompany] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
@@ -39,8 +42,14 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
-    SecureStore.getItemAsync(SECURE_STORE_KEYS[0])
-      .then((stored) => setIdToken(stored))
+    Promise.all([
+      SecureStore.getItemAsync(SECURE_STORE_KEYS[0]),
+      SecureStore.getItemAsync(SECURE_STORE_KEYS[1]),
+    ])
+      .then(([storedId, storedAccess]) => {
+        setIdToken(storedId);
+        setAccessToken(storedAccess);
+      })
       .finally(() => setBusy(false));
   }, []);
 
@@ -62,6 +71,7 @@ export default function SignInScreen() {
       await SecureStore.setItemAsync(SECURE_STORE_KEYS[1], tokens.accessToken);
       await SecureStore.setItemAsync(SECURE_STORE_KEYS[2], tokens.refreshToken);
       setIdToken(tokens.idToken);
+      setAccessToken(tokens.accessToken);
       setPassword("");
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : "Sign-in failed");
@@ -126,12 +136,70 @@ export default function SignInScreen() {
     setQueueReady(false);
     if (companyId) {
       await clearCompanyQueue(deviceStore, companyId);
+      await clearFake(deviceStore, companyId);
     }
     await Promise.all(cleared.deleteKeys.map((key) => SecureStore.deleteItemAsync(key)));
     setReceipts(cleared.queue);
     setIdToken(null);
+    setAccessToken(null);
     setPreviewCompany(null);
     setUsername("");
+  }
+
+  function replaceReceipt(next: LocalReceipt) {
+    setReceipts((current) => current.map((item) => (item.localId === next.localId ? next : item)));
+  }
+
+  async function send(receipt: LocalReceipt) {
+    const idempotencyKey = receipt.idempotencyKey ?? `local-${receipt.localId}`;
+    const result = await submitReceipt({
+      store: deviceStore,
+      companyId: receipt.companyId,
+      merchant: receipt.merchant,
+      amountMinor: receipt.amountMinor,
+      currency: receipt.currency,
+      date: receipt.date,
+      idempotencyKey,
+      accessToken,
+      apiUrl,
+      offline,
+    });
+    replaceReceipt({
+      ...receipt,
+      idempotencyKey,
+      receiptId: result.receiptId,
+      status: result.status,
+      replayed: result.replayed,
+      submitSource: result.source,
+    });
+  }
+
+  async function queueAndSubmit(localId: string) {
+    const current = receipts.find((item) => item.localId === localId);
+    if (!current) return;
+    setQueueError(null);
+    try {
+      const queued = {
+        ...queueDraft(current),
+        idempotencyKey: current.idempotencyKey ?? `local-${current.localId}`,
+      };
+      replaceReceipt(queued);
+      if (offline) return;
+      await send(queued);
+    } catch (submitError) {
+      setQueueError(submitError instanceof Error ? submitError.message : "Could not submit the receipt");
+    }
+  }
+
+  async function submitExisting(localId: string) {
+    const current = receipts.find((item) => item.localId === localId);
+    if (!current) return;
+    setQueueError(null);
+    try {
+      await send(current);
+    } catch (submitError) {
+      setQueueError(submitError instanceof Error ? submitError.message : "Could not submit the receipt");
+    }
   }
 
   if (busy && !showCapture) {
@@ -161,6 +229,8 @@ export default function SignInScreen() {
           receipts={receipts}
           onChange={setReceipts}
           onOfflineChange={setOffline}
+          onQueue={(localId) => void queueAndSubmit(localId)}
+          onSubmit={(localId) => void submitExisting(localId)}
           onLogout={onLogout}
         />
       </SafeAreaView>
