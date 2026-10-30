@@ -2,6 +2,23 @@
 set -eu
 cd "$(dirname "$0")/.."
 
+export PATH="$HOME/.maestro/bin:$PATH"
+
+if ! java -version >/dev/null 2>&1; then
+  for jdk in /opt/homebrew/opt/openjdk@21 /opt/homebrew/opt/openjdk@17; do
+    if [ -x "$jdk/bin/java" ]; then
+      export JAVA_HOME="$jdk"
+      export PATH="$jdk/bin:$PATH"
+      break
+    fi
+  done
+fi
+
+if ! java -version >/dev/null 2>&1; then
+  echo "Install a JDK, then run this again: brew install openjdk@21"
+  exit 1
+fi
+
 if ! command -v maestro >/dev/null 2>&1; then
   echo "Install Maestro, then run this again: curl -Ls https://get.maestro.mobile.dev | bash"
   exit 1
@@ -22,12 +39,10 @@ echo "The app should already be open in Expo Go. For the City Parking steps, set
 
 maestro record --local \
   --debug-output "$out/debug-$stamp" \
-  --output "$out/report-$stamp.xml" \
   -e MAESTRO_USERNAME="${MAESTRO_USERNAME:-northwind.demo}" \
   -e MAESTRO_PASSWORD="${MAESTRO_PASSWORD:-Northwind-demo-1}" \
   maestro/walk.yaml \
   "$video"
 
 echo "Video: $video"
-echo "Report: $out/report-$stamp.xml"
-echo "Send the mp4 if a reviewer asks for the simulator walk."
+echo "Commit that mp4. Debug screenshots stay out of git."

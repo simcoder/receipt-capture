@@ -10,6 +10,7 @@ appId: host.exp.Exponent
       - inputText: ${MAESTRO_USERNAME}
       - tapOn: "Password"
       - inputText: ${MAESTRO_PASSWORD}
+      - tapOn: "Receipt capture"
       - tapOn: "Sign in"
       - extendedWaitUntil:
           visible: "Receipts"
