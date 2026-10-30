@@ -152,11 +152,25 @@ export function ReceiptCapture(props: {
       {props.receipts.map((receipt) => (
         <View key={receipt.localId} style={styles.receipt}>
           <Text style={styles.merchant}>{receipt.merchant}</Text>
+          <Text style={styles.receiptId}>
+            {receipt.receiptId ? `Receipt id ${receipt.receiptId}` : "Receipt id appears after you queue"}
+          </Text>
+          {receipt.replayed ? <Text style={styles.receiptId}>Same receipt</Text> : null}
+          {receipt.submitSource === "local-fake" ? <Text style={styles.receiptId}>Local fake</Text> : null}
           <Text>
             {formatMoney(receipt.amountMinor, receipt.currency)} · {receipt.amountMinor} minor units
           </Text>
           <Text>{receipt.date}</Text>
           <Text>{syntheticImageLabel(receipt.imageId)}</Text>
+          {receipt.status === "Draft" ? (
+            <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
+              <Text>Queue receipt</Text>
+            </Pressable>
+          ) : (
+            <Pressable style={styles.secondary} onPress={() => props.onSubmit(receipt.localId)}>
+              <Text>Submit again</Text>
+            </Pressable>
+          )}
           <Text style={styles.label}>Status</Text>
           <View style={styles.rail}>
             {RECEIPT_STATUSES.map((status) => {
@@ -169,18 +183,6 @@ export function ReceiptCapture(props: {
             })}
           </View>
           <Text style={styles.note}>Confirmed is set by the server or by a review correction.</Text>
-          {receipt.receiptId ? <Text>Receipt {receipt.receiptId}</Text> : null}
-          {receipt.replayed ? <Text>Same receipt</Text> : null}
-          {receipt.submitSource === "local-fake" ? <Text>Local fake</Text> : null}
-          {receipt.status === "Draft" ? (
-            <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
-              <Text>Queue receipt</Text>
-            </Pressable>
-          ) : (
-            <Pressable style={styles.secondary} onPress={() => props.onSubmit(receipt.localId)}>
-              <Text>Submit again</Text>
-            </Pressable>
-          )}
         </View>
       ))}
 
@@ -231,6 +233,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   merchant: { fontSize: 16, fontWeight: "600" },
+  receiptId: { fontSize: 15, fontWeight: "600", color: "#1f3a2e" },
   rail: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
   status: {
     fontSize: 12,
