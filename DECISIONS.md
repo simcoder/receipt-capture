@@ -27,6 +27,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Issue 30 opens a NeedsReview receipt with the fields read-only and the existing Confirm match action. Other statuses stay on the list. Confirm still copies Confirmed from the match API. One transaction cannot take two receipts.
 - 2026-10-30: Issue 38 adds an optional notes field. Empty notes still submit.
 - 2026-10-30: Issue 39 submits while online. Offline capture stays Queued on the device, and a returning network submits those queued receipts. The client still does not mark Confirmed on its own.
+- 2026-10-30: Spec 003 adds a public review portal. CloudFront serves the static files. The S3 bucket stays closed to direct public reads. The phone still creates receipts. The portal confirms a NeedsReview match or retries a Failed receipt and does not edit the submitted fields.
 
 ## Accepted
 
