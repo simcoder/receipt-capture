@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -9,12 +9,15 @@ import {
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   afterLogout,
   companyIdFromIdToken,
   SECURE_STORE_KEYS,
   signInWithPassword,
 } from "../src/cognitoAuth";
+import { deviceStore } from "../src/deviceStore";
+import { clearCompanyQueue, loadLocalSession, saveOffline, saveQueue } from "../src/localQueue";
 import { ReceiptCapture } from "../src/ReceiptCapture";
 import type { LocalReceipt } from "../src/receiptDraft";
 
@@ -27,6 +30,11 @@ export default function SignInScreen() {
   const [idToken, setIdToken] = useState<string | null>(null);
   const [receipts, setReceipts] = useState<LocalReceipt[]>([]);
   const [previewCompany, setPreviewCompany] = useState<string | null>(null);
+  const [offline, setOffline] = useState(false);
+  const [queueReady, setQueueReady] = useState(false);
+  const [canPersist, setCanPersist] = useState(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const saveGeneration = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
@@ -62,17 +70,69 @@ export default function SignInScreen() {
     }
   }
 
+  const showCapture = Boolean(idToken) || Boolean(previewCompany);
+  const companyId = idToken ? (companyIdFromIdToken(idToken) ?? "") : (previewCompany ?? "");
+
+  useEffect(() => {
+    if (!showCapture || !companyId) {
+      setQueueReady(false);
+      return;
+    }
+    let cancelled = false;
+    setQueueReady(false);
+    setCanPersist(false);
+    loadLocalSession(deviceStore, companyId)
+      .then((session) => {
+        if (cancelled) return;
+        setReceipts(session.receipts);
+        setOffline(session.offline);
+        setQueueError(null);
+        setCanPersist(true);
+        setQueueReady(true);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+        setReceipts([]);
+        setQueueError(loadError instanceof Error ? loadError.message : "Could not load the queue");
+        setCanPersist(false);
+        setQueueReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showCapture, companyId]);
+
+  useEffect(() => {
+    if (!canPersist || !companyId) return;
+    const generation = saveGeneration.current;
+    const company = companyId;
+    const snapshot = receipts;
+    void saveQueue(deviceStore, company, snapshot).then(async () => {
+      if (saveGeneration.current !== generation) {
+        await clearCompanyQueue(deviceStore, company);
+      }
+    });
+  }, [canPersist, companyId, receipts]);
+
+  useEffect(() => {
+    if (!canPersist) return;
+    void saveOffline(deviceStore, offline);
+  }, [canPersist, offline]);
+
   async function onLogout() {
     const cleared = afterLogout(receipts);
+    saveGeneration.current += 1;
+    setCanPersist(false);
+    setQueueReady(false);
+    if (companyId) {
+      await clearCompanyQueue(deviceStore, companyId);
+    }
     await Promise.all(cleared.deleteKeys.map((key) => SecureStore.deleteItemAsync(key)));
     setReceipts(cleared.queue);
     setIdToken(null);
     setPreviewCompany(null);
     setUsername("");
   }
-
-  const showCapture = Boolean(idToken) || Boolean(previewCompany);
-  const companyId = idToken ? (companyIdFromIdToken(idToken) ?? "") : (previewCompany ?? "");
 
   if (busy && !showCapture) {
     return (
@@ -82,22 +142,33 @@ export default function SignInScreen() {
     );
   }
 
+  if (showCapture && !queueReady) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
+
   if (showCapture) {
     return (
-      <View style={styles.screen}>
+      <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
         <StatusBar style="dark" />
         <ReceiptCapture
           companyId={companyId}
+          offline={offline}
+          queueError={queueError}
           receipts={receipts}
           onChange={setReceipts}
+          onOfflineChange={setOffline}
           onLogout={onLogout}
         />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.centered}>
+    <SafeAreaView style={styles.centered}>
       <StatusBar style="dark" />
       <Text style={styles.title}>Receipt capture</Text>
       <View style={styles.block}>
@@ -129,7 +200,7 @@ export default function SignInScreen() {
           </Pressable>
         ) : null}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
