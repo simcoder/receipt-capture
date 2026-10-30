@@ -33,6 +33,20 @@ describe("company receipt list", () => {
     assert.equal(receipts[0]?.amountMinor, 1850);
     assert.equal(receipts[0]?.date, "10-29-2026");
     assert.equal(receipts[0]?.status, "Confirmed");
+    assert.equal(receipts[0]?.matchedTransactionId, undefined);
+  });
+
+  it("keeps the matched transaction on a confirmed receipt", async () => {
+    const receipts = await fetchCompanyReceipts({
+      apiUrl: "https://example.test",
+      idToken: "id-token",
+      companyId: "northwind",
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ receipts: [{ ...northwind, matchedTransactionId: "txn-blue-bottle" }] }), {
+          status: 200,
+        }),
+    });
+    assert.equal(receipts[0]?.matchedTransactionId, "txn-blue-bottle");
   });
 
   it("does not show another company's receipts", async () => {

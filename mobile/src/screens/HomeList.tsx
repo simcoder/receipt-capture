@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { formatMoney } from "../receipts/receiptDraft";
 import type { CompanyReceipt } from "../receipts/receiptList";
 
@@ -6,6 +6,7 @@ export function HomeList(props: {
   companyId: string;
   receipts: readonly CompanyReceipt[];
   error: string | null;
+  onReview: (receiptId: string) => void;
 }) {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -14,14 +15,33 @@ export function HomeList(props: {
       <Text>{props.companyId}</Text>
       {props.error ? <Text style={styles.error}>{props.error}</Text> : null}
       {props.receipts.length === 0 && !props.error ? <Text>No receipts yet</Text> : null}
-      {props.receipts.map((receipt) => (
-        <View key={receipt.receiptId} style={styles.receipt}>
-          <Text style={styles.merchant}>{receipt.merchant}</Text>
-          <Text>{formatMoney(receipt.amountMinor, receipt.currency)}</Text>
-          <Text>{receipt.date}</Text>
-          <Text style={styles.status}>{receipt.status}</Text>
-        </View>
-      ))}
+      {props.receipts.map((receipt) => {
+        const body = (
+          <>
+            <Text style={styles.merchant}>{receipt.merchant}</Text>
+            <Text>{formatMoney(receipt.amountMinor, receipt.currency)}</Text>
+            <Text>{receipt.date}</Text>
+            <Text style={styles.status}>{receipt.status}</Text>
+          </>
+        );
+        if (receipt.status !== "NeedsReview") {
+          return (
+            <View key={receipt.receiptId} style={styles.receipt}>
+              {body}
+            </View>
+          );
+        }
+        return (
+          <Pressable
+            key={receipt.receiptId}
+            accessibilityLabel={`Review ${receipt.merchant}`}
+            style={styles.receipt}
+            onPress={() => props.onReview(receipt.receiptId)}
+          >
+            {body}
+          </Pressable>
+        );
+      })}
     </ScrollView>
   );
 }

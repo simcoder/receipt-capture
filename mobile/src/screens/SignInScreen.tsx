@@ -17,6 +17,7 @@ import { CaptureSheet } from "./CaptureSheet";
 import { ReceiptCapture } from "./ReceiptCapture";
 import { HomeList } from "./HomeList";
 import { ProfileScreen } from "./ProfileScreen";
+import { ReviewReceipt } from "./ReviewReceipt";
 
 export default function SignInScreen() {
   const session = useSession();
@@ -36,6 +37,7 @@ export default function SignInScreen() {
   const [listReady, setListReady] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [visit, setVisit] = useState<{ imageId: ReceiptImageId; photoBase64?: string } | null>(null);
+  const [reviewId, setReviewId] = useState<string | null>(null);
   const [tab, setTab] = useState<AppTab>("home");
   const saveGeneration = useRef(0);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +143,7 @@ export default function SignInScreen() {
     setListError(null);
     setCaptureError(null);
     setVisit(null);
+    setReviewId(null);
     setTab("home");
     setPreviewCompany(null);
     setUsername("");
@@ -225,6 +228,38 @@ export default function SignInScreen() {
     }
   }
 
+  async function confirmReview(receiptId: string, transactionId: string) {
+    const current = apiReceipts.find((row) => row.receiptId === receiptId);
+    if (!current || current.status !== "NeedsReview") return;
+    setMatchError(null);
+    try {
+      const result = await api.confirmMatch({
+        store: deviceStore,
+        siblings: apiReceipts,
+        receipt: current,
+        transactionId,
+        offline,
+      });
+      const confirmed = {
+        ...current,
+        status: result.status,
+        matchedTransactionId: result.matchedTransactionId,
+      };
+      setApiReceipts((rows) => rows.map((row) => (row.receiptId === receiptId ? confirmed : row)));
+      setReviewId(null);
+      if (companyId) {
+        const rows = await api.getReceipts(companyId).catch(() => null);
+        if (rows) {
+          setApiReceipts(
+            rows.map((row) => (row.receiptId === receiptId && row.status !== "Confirmed" ? confirmed : row)),
+          );
+        }
+      }
+    } catch (confirmError) {
+      setMatchError(confirmError instanceof Error ? confirmError.message : "Could not confirm the match");
+    }
+  }
+
   async function onConfirm(localId: string, transactionId: string) {
     const current = receipts.find((item) => item.localId === localId);
     if (!current?.receiptId) return;
@@ -301,10 +336,21 @@ export default function SignInScreen() {
   }
 
   if (idToken) {
+    const review = apiReceipts.find((row) => row.receiptId === reviewId && row.status === "NeedsReview");
     return (
       <SafeAreaView style={styles.screen} edges={["bottom"]}>
         <View style={styles.screen}>
-          {tab === "home" ? <HomeList companyId={companyId} receipts={apiReceipts} error={listError} /> : null}
+          {tab === "home" ? (
+            <HomeList
+              companyId={companyId}
+              receipts={apiReceipts}
+              error={listError}
+              onReview={(receiptId) => {
+                setMatchError(null);
+                setReviewId(receiptId);
+              }}
+            />
+          ) : null}
           {tab === "capture" ? (
             <CaptureScreen
               error={captureError}
@@ -341,6 +387,16 @@ export default function SignInScreen() {
               photoBase64={visit.photoBase64}
               onBack={() => setVisit(null)}
               onSubmit={submitVisit}
+            />
+          </CaptureSheet>
+        ) : null}
+        {review ? (
+          <CaptureSheet onDismiss={() => setReviewId(null)}>
+            <ReviewReceipt
+              receipt={review}
+              siblings={apiReceipts}
+              error={matchError}
+              onConfirm={(transactionId) => void confirmReview(review.receiptId, transactionId)}
             />
           </CaptureSheet>
         ) : null}
