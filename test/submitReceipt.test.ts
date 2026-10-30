@@ -136,7 +136,7 @@ describe("submit receipt", () => {
     assert.equal(result.status, "NeedsReview");
     assert.deepEqual(
       SEED_TRANSACTIONS.map((transaction) => transaction.id),
-      ["txn-blue-bottle", "txn-parking", "txn-contoso-cafe"],
+      ["txn-blue-bottle", "txn-harbor", "txn-parking", "txn-contoso-cafe"],
     );
   });
 

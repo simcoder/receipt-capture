@@ -33,8 +33,8 @@ appId: host.exp.Exponent
 - runFlow:
     file: flows/submit-receipt.yaml
     env:
-      MERCHANT: "Blue Bottle Coffee"
-      AMOUNT: "18.50"
+      MERCHANT: "Harbor Grill"
+      AMOUNT: "24.00"
       EXPECT: "0.80 (80%)"
 - assertVisible: "Confirmed"
 - runFlow:
@@ -66,6 +66,7 @@ appId: host.exp.Exponent
       MAESTRO_USERNAME: "contoso.demo"
       MAESTRO_PASSWORD: "Contoso-demo-1"
 - assertNotVisible: "Blue Bottle"
+- assertNotVisible: "Harbor Grill"
 - assertNotVisible: "City Parking"
 - assertNotVisible: "Fail Upload"
 - runFlow:

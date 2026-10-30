@@ -29,6 +29,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Issue 39 submits while online. Offline capture stays Queued on the device, and a returning network submits those queued receipts. The client still does not mark Confirmed on its own.
 - 2026-10-30: The fake processor stores its confidence score on the receipt. The list shows that score as a decimal and a percent. A score of 0.8 or higher still confirms the match.
 - 2026-10-30: Merchant `Fail Upload` rejects the transfer. The receipt is Failed and keeps the same id. Retry runs the processor on that receipt.
+- 2026-10-30: Northwind seed `txn-harbor` is Harbor at 24.00 USD. Harbor Grill confirms at 0.8 against that transaction, so the 80% check does not reuse the Blue Bottle transaction.
 
 ## Accepted
 

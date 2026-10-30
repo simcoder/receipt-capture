@@ -70,6 +70,12 @@ export const seedTransactions = [
     money: { amountMinor: 1850, currency: "USD" },
   },
   {
+    id: "txn-harbor",
+    companyId: "northwind",
+    merchant: "Harbor",
+    money: { amountMinor: 2400, currency: "USD" },
+  },
+  {
     id: "txn-parking",
     companyId: "northwind",
     merchant: "Airport Parking",

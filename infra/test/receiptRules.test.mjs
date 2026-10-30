@@ -59,4 +59,26 @@ describe("infra receipt rules", () => {
     });
     assert.equal(late.matchedTransactionId, "txn-blue-bottle");
   });
+
+  it("confirms Harbor Grill on its own seed after Blue Bottle is taken", () => {
+    const harbor = {
+      id: "rcpt-harbor",
+      companyId: "northwind",
+      merchant: "Harbor Grill",
+      money: { amountMinor: 2400, currency: "USD" },
+    };
+    const confirmed = fakeProcessor(harbor, seedTransactions, new Set(["txn-blue-bottle"]));
+    assert.equal(confirmed.kind, "confirmed");
+    assert.equal(confirmed.transactionId, "txn-harbor");
+    assert.equal(confirmed.confidence, 0.8);
+    const coffee = {
+      id: "rcpt-coffee",
+      companyId: "northwind",
+      merchant: "Blue Bottle Coffee",
+      money: { amountMinor: 1850, currency: "USD" },
+    };
+    const taken = fakeProcessor(coffee, seedTransactions, new Set(["txn-blue-bottle"]));
+    assert.equal(taken.kind, "needs_review");
+    assert.equal(taken.confidence, 0);
+  });
 });
