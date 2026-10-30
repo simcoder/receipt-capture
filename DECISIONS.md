@@ -19,6 +19,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Issue 9 publishes the CDK stack in `infra/` and deploys `ReceiptCapturePoc` from that folder. The Lambda date copy is `MM-DD-YYYY`, matching the domain. Tear down with `npm run destroy` in `infra/`.
 - 2026-10-30: Issue 10 wires submit to `POST /receipts` with `Idempotency-Key`. A lost success is retried with the same key and returns the same receipt. If the API cannot be reached, the app uses a local fake with that same rule.
 - 2026-10-30: Issue 11 adds the match choices on a NeedsReview receipt. The user confirms one open transaction. A second receipt cannot take it. A later processor result leaves that correction in place.
+- 2026-10-30: Spec 001 in `.spec/001-initial-poc.md` is the completed plan, issues 1–11. The demo script, AI usage notes, and recording are not part of that spec.
 
 ## Accepted
 
@@ -112,4 +113,4 @@ Each item stays out until a later decision says otherwise.
 
 ## Still open
 
-- The five-minute demo script. Written after the deployed path works.
+None for spec 001. The next spec has not been written.

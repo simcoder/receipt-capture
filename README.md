@@ -6,7 +6,7 @@ This is not a product. There is no employer code, customer data, or live card da
 
 ## Time box
 
-Started 2026-10-29. This is a multi-day slice aimed at one coherent demo. Extra time does not add scope. What is still out of scope is listed in [DECISIONS.md](DECISIONS.md).
+Started 2026-10-29. Spec 001, the plan that shipped, is [.spec/001-initial-poc.md](.spec/001-initial-poc.md). Decisions are in [DECISIONS.md](DECISIONS.md).
 
 ## Status
 
@@ -23,7 +23,7 @@ Started 2026-10-29. This is a multi-day slice aimed at one coherent demo. Extra 
 | API submit | Issue 10. `POST /receipts` with `Idempotency-Key`. A lost success returns the same receipt. A local fake covers `npx expo start` when AWS is down. |
 | Match correction | Issue 11. A NeedsReview receipt lists open transactions. Confirm match sets Confirmed from that choice. One transaction cannot take two receipts. A later processor result leaves the correction in place. |
 | AWS stack | Issue 9. `ReceiptCapturePoc` in `infra/`. Deploy and destroy from that folder. Cleanup is `infra/CLEANUP.md`. |
-| Five-minute demo | Not recorded. |
+| Spec 001 | Complete. Archived in [.spec/001-initial-poc.md](.spec/001-initial-poc.md). |
 
 ## Run the tests
 
