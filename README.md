@@ -18,6 +18,7 @@ Started 2026-10-29. This is a multi-day slice aimed at one coherent demo. Extra 
 | Idempotency and company switch | Issue 4. A lost success returns the same receipt. Another company's key is rejected. Logout clears the queue. |
 | Matching | Issue 5. Exact currency and minor units, then merchant similarity. One transaction cannot take two receipts. A late processor result does not overwrite a user correction. |
 | Expo sign-in | Issue 6. In-app Cognito password sign-in. Tokens in SecureStore. Logout clears the queue. |
+| Receipt form | Issue 7. Merchant, amount, currency, `MM-DD-YYYY` date, and a synthetic image. The screen shows every state and does not mark Confirmed. |
 | AWS stack | Written locally in `infra/`. Issue 9. Not deployed. Cleanup is `infra/CLEANUP.md`. |
 | Five-minute demo | Not recorded. |
 
@@ -31,14 +32,16 @@ npm test
 npm run typecheck
 ```
 
-There is no receipt form yet. The sign-in shell is in `mobile/`:
+The app is in `mobile/`:
 
 ```bash
 cd mobile
 cp env.example .env
 npm install
-npx expo start
+npx expo start --ios
 ```
+
+`--ios` opens the installed iOS Simulator. After sign-in, save a draft and queue it. The status rail lists every state. Confirmed stays unset on this screen. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito.
 
 Put the region, user pool id, and app client id from the infra stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). The pool is created when issue 9 deploys.
 

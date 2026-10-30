@@ -14,8 +14,9 @@ import {
   companyIdFromIdToken,
   SECURE_STORE_KEYS,
   signInWithPassword,
-  type QueuedReceipt,
 } from "../src/cognitoAuth";
+import { ReceiptCapture } from "../src/ReceiptCapture";
+import type { LocalReceipt } from "../src/receiptDraft";
 
 const region = process.env.EXPO_PUBLIC_COGNITO_REGION ?? "";
 const clientId = process.env.EXPO_PUBLIC_COGNITO_CLIENT_ID ?? "";
@@ -24,7 +25,8 @@ export default function SignInScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [idToken, setIdToken] = useState<string | null>(null);
-  const [queue, setQueue] = useState<QueuedReceipt[]>([]);
+  const [receipts, setReceipts] = useState<LocalReceipt[]>([]);
+  const [previewCompany, setPreviewCompany] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
 
@@ -61,82 +63,86 @@ export default function SignInScreen() {
   }
 
   async function onLogout() {
-    const cleared = afterLogout(queue);
+    const cleared = afterLogout(receipts);
     await Promise.all(cleared.deleteKeys.map((key) => SecureStore.deleteItemAsync(key)));
-    setQueue(cleared.queue);
+    setReceipts(cleared.queue);
     setIdToken(null);
+    setPreviewCompany(null);
     setUsername("");
   }
 
-  function holdLocalReceipt() {
-    if (!idToken) return;
-    const companyId = companyIdFromIdToken(idToken) ?? "unknown";
-    setQueue((current) => [
-      ...current,
-      { localId: `local-${current.length + 1}`, companyId },
-    ]);
-  }
+  const showCapture = Boolean(idToken) || Boolean(previewCompany);
+  const companyId = idToken ? (companyIdFromIdToken(idToken) ?? "") : (previewCompany ?? "");
 
-  if (busy && !idToken) {
+  if (busy && !showCapture) {
     return (
-      <View style={styles.screen}>
+      <View style={styles.centered}>
         <ActivityIndicator />
       </View>
     );
   }
 
+  if (showCapture) {
+    return (
+      <View style={styles.screen}>
+        <StatusBar style="dark" />
+        <ReceiptCapture
+          companyId={companyId}
+          receipts={receipts}
+          onChange={setReceipts}
+          onLogout={onLogout}
+        />
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.screen}>
+    <View style={styles.centered}>
       <StatusBar style="dark" />
       <Text style={styles.title}>Receipt capture</Text>
-      {idToken ? (
-        <View style={styles.block}>
-          <Text style={styles.label}>Signed in</Text>
-          <Text>{companyIdFromIdToken(idToken) ?? "No company claim"}</Text>
-          <Text style={styles.label}>Local queue</Text>
-          <Text>{queue.length === 0 ? "Empty" : queue.map((item) => item.localId).join(", ")}</Text>
-          <Pressable style={styles.secondary} onPress={holdLocalReceipt}>
-            <Text>Hold a local receipt</Text>
+      <View style={styles.block}>
+        <Text style={styles.hint}>
+          Use northwind.demo or contoso.demo. Passwords are in infra/README.md.
+        </Text>
+        <TextInput
+          autoCapitalize="none"
+          autoCorrect={false}
+          onChangeText={setUsername}
+          placeholder="Username"
+          style={styles.input}
+          value={username}
+        />
+        <TextInput
+          onChangeText={setPassword}
+          placeholder="Password"
+          secureTextEntry
+          style={styles.input}
+          value={password}
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Pressable style={styles.primary} onPress={onSignIn}>
+          <Text style={styles.primaryText}>Sign in</Text>
+        </Pressable>
+        {!region || !clientId ? (
+          <Pressable style={styles.secondary} onPress={() => setPreviewCompany("northwind")}>
+            <Text>Preview form as northwind</Text>
           </Pressable>
-          <Pressable style={styles.primary} onPress={onLogout}>
-            <Text style={styles.primaryText}>Log out</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={styles.block}>
-          <Text style={styles.hint}>
-            Use northwind.demo or contoso.demo. Passwords are in infra/README.md.
-          </Text>
-          <TextInput
-            autoCapitalize="none"
-            autoCorrect={false}
-            onChangeText={setUsername}
-            placeholder="Username"
-            style={styles.input}
-            value={username}
-          />
-          <TextInput
-            onChangeText={setPassword}
-            placeholder="Password"
-            secureTextEntry
-            style={styles.input}
-            value={password}
-          />
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable style={styles.primary} onPress={onSignIn}>
-            <Text style={styles.primaryText}>Sign in</Text>
-          </Pressable>
-        </View>
-      )}
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, justifyContent: "center", padding: 24, backgroundColor: "#f7f7f5" },
+  screen: { flex: 1, backgroundColor: "#f7f7f5" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+    backgroundColor: "#f7f7f5",
+  },
   title: { fontSize: 28, fontWeight: "600", marginBottom: 24 },
   block: { gap: 12 },
-  label: { fontSize: 13, color: "#555" },
   hint: { color: "#333", marginBottom: 8 },
   input: {
     borderWidth: 1,
