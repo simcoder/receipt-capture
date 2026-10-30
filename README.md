@@ -141,22 +141,36 @@ The banner under the status bar is green while the Mac has a network and red whe
 
 ## Review portal
 
-The portal lists receipts the phone already submitted. It does not create a receipt, edit merchant, amount, currency, or date, or delete a row. A NeedsReview receipt can confirm one open match. A Failed receipt can retry. The page copies Confirmed from the API response.
+The deployed site is [https://dyn2tqabuofe2.cloudfront.net](https://dyn2tqabuofe2.cloudfront.net).
 
-From this folder:
+The portal lists receipts the phone already submitted. It does not create a receipt, edit merchant, amount, currency, or date, or delete a row. A NeedsReview receipt can confirm one open match. A Failed receipt can retry. The page copies Confirmed from the API response. The user icon in the top bar shows the company for the current session. **Log out** is in that menu.
+
+### Run locally
+
+From this folder, after you clone the repo:
+
+1. Install the portal and copy the config file.
 
 ```bash
 npm ci --prefix portal
 cp portal/config.example.json portal/public/config.json
 ```
 
-Fill `portal/public/config.json` with the region, user pool id, app client id, and API URL from the stack outputs. That file stays off git. Then:
+2. Fill `portal/public/config.json` with the region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack outputs. That file stays off git. Usernames and passwords are in [infra/README.md](infra/README.md).
+
+3. Start the dev server.
 
 ```bash
 npm run dev --prefix portal
 ```
 
-Open the printed local URL and sign in with the same demo user as the phone. Deploy publishes the site. From `infra/`, `npm run deploy` builds `portal/` first and prints `PortalUrl`, an `https://*.cloudfront.net` address. The bucket stays closed to direct public reads. Tear down is still `npm run destroy`.
+4. Open the local URL Vite prints. Sign in with the same demo user as the phone.
+
+### Deployed site
+
+Open [https://dyn2tqabuofe2.cloudfront.net](https://dyn2tqabuofe2.cloudfront.net). CloudFront serves the static files over HTTPS on that address. The S3 bucket stays closed to direct public reads. Anyone can open the sign-in page. Receipts still require the company sign-in.
+
+From `infra/`, `npm run deploy` rebuilds `portal/` and updates that site. The stack output `PortalUrl` is the same address. Tear down is `npm run destroy` from `infra/`.
 
 ## Companies
 
