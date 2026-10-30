@@ -155,6 +155,56 @@ describe("submit receipt", () => {
     assert.equal(await store.getItem("receipt-capture.fake.northwind"), null);
   });
 
+  it("sends a photo only when online and under the quarantine limit", async () => {
+    const seen: string[] = [];
+    await submitReceipt({
+      ...receipt,
+      store: memoryStore(),
+      idToken: "id-token",
+      apiUrl: "https://example.test",
+      imageBase64: "data:image/jpeg;base64,YQ==",
+      fetchImpl: async (_url, init) => {
+        seen.push(String(init?.body));
+        return new Response(JSON.stringify({ receipt: { receiptId: "server-1", status: "NeedsReview" } }), {
+          status: 201,
+        });
+      },
+    });
+    assert.equal(JSON.parse(seen[0] ?? "{}").imageBase64, "YQ==");
+
+    const offlineStore = memoryStore();
+    let called = false;
+    await submitReceipt({
+      ...receipt,
+      store: offlineStore,
+      offline: true,
+      imageBase64: "YQ==",
+      fetchImpl: async () => {
+        called = true;
+        return new Response("{}", { status: 500 });
+      },
+    });
+    assert.equal(called, false);
+    assert.equal(String(await offlineStore.getItem("receipt-capture.fake.northwind")).includes("imageBase64"), false);
+
+    const oversized = "A".repeat(666668);
+    const largeSeen: string[] = [];
+    await submitReceipt({
+      ...receipt,
+      store: memoryStore(),
+      idToken: "id-token",
+      apiUrl: "https://example.test",
+      imageBase64: oversized,
+      fetchImpl: async (_url, init) => {
+        largeSeen.push(String(init?.body));
+        return new Response(JSON.stringify({ receipt: { receiptId: "server-2", status: "NeedsReview" } }), {
+          status: 201,
+        });
+      },
+    });
+    assert.equal(largeSeen[0]?.includes("imageBase64"), false);
+  });
+
   it("builds the request without a token in the body", () => {
     const request = submitRequest({
       apiUrl: "https://example.test/",

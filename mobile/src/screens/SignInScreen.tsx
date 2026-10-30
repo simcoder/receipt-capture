@@ -7,7 +7,8 @@ import { useConnectivity } from "../providers/connectivity-provider";
 import { useSession } from "../providers/session-provider";
 import { clearCompanyQueue, loadLocalSession, saveQueue } from "../storage/localQueue";
 import { deviceStore } from "../storage/deviceStore";
-import { queueDraft, type LocalReceipt } from "../receipts/receiptDraft";
+import { chooseReceiptPhoto, takeReceiptPhoto } from "../receipts/pickReceiptImage";
+import { DEVICE_PHOTO_ID, queueDraft, type LocalReceipt, type ReceiptImageId } from "../receipts/receiptDraft";
 import { type CompanyReceipt } from "../receipts/receiptList";
 import { clearFake } from "../receipts/submitReceipt";
 import { ReceiptCapture } from "./ReceiptCapture";
@@ -29,6 +30,8 @@ export default function SignInScreen() {
   const [apiReceipts, setApiReceipts] = useState<CompanyReceipt[]>([]);
   const [listError, setListError] = useState<string | null>(null);
   const [listReady, setListReady] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  const [visit, setVisit] = useState<{ imageId: ReceiptImageId; photoBase64?: string } | null>(null);
   const saveGeneration = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,6 +134,8 @@ export default function SignInScreen() {
     setReceipts(cleared.queue);
     setApiReceipts([]);
     setListError(null);
+    setCaptureError(null);
+    setVisit(null);
     setPreviewCompany(null);
     setUsername("");
   }
@@ -150,7 +155,25 @@ export default function SignInScreen() {
       date: receipt.date,
       idempotencyKey,
       offline,
+      imageBase64: visit?.photoBase64,
     });
+    if (result.source === "api" && companyId) {
+      const rows = await api.getReceipts(companyId).catch(() => null);
+      if (rows) setApiReceipts(rows);
+    } else {
+      setApiReceipts((current) => [
+        {
+          receiptId: result.receiptId,
+          companyId: receipt.companyId,
+          merchant: receipt.merchant,
+          amountMinor: receipt.amountMinor,
+          currency: receipt.currency,
+          date: receipt.date,
+          status: result.status,
+        },
+        ...current.filter((row) => row.receiptId !== result.receiptId),
+      ]);
+    }
     replaceReceipt({
       ...receipt,
       idempotencyKey,
@@ -218,6 +241,50 @@ export default function SignInScreen() {
     );
   }
 
+  async function openCamera() {
+    setCaptureError(null);
+    try {
+      const photo = await takeReceiptPhoto();
+      if (!photo) return;
+      setVisit({ imageId: DEVICE_PHOTO_ID, photoBase64: photo });
+    } catch (cameraError) {
+      setCaptureError(
+        cameraError instanceof Error ? cameraError.message : "This simulator has no camera. Use a fake receipt.",
+      );
+    }
+  }
+
+  async function uploadPicture() {
+    setCaptureError(null);
+    try {
+      const photo = await chooseReceiptPhoto();
+      if (!photo) return;
+      setVisit({ imageId: DEVICE_PHOTO_ID, photoBase64: photo });
+    } catch (libraryError) {
+      setCaptureError(libraryError instanceof Error ? libraryError.message : "That picture could not be read.");
+    }
+  }
+
+  if (idToken && visit) {
+    return (
+      <SafeAreaView style={styles.screen} edges={["bottom"]}>
+        <ReceiptCapture
+          companyId={companyId}
+          queueError={queueError}
+          receipts={receipts}
+          onChange={setReceipts}
+          onQueue={(localId) => void queueAndSubmit(localId)}
+          onConfirm={(localId, transactionId) => void onConfirm(localId, transactionId)}
+          matchError={matchError}
+          onLogout={onLogout}
+          initialImageId={visit.imageId}
+          photoBase64={visit.photoBase64}
+          onBack={() => setVisit(null)}
+        />
+      </SafeAreaView>
+    );
+  }
+
   if (idToken && !listReady) {
     return (
       <SafeAreaView style={styles.centered} edges={["bottom"]}>
@@ -229,7 +296,19 @@ export default function SignInScreen() {
   if (idToken) {
     return (
       <SafeAreaView style={styles.screen} edges={["bottom"]}>
-        <HomeList companyId={companyId} receipts={apiReceipts} error={listError} onLogout={onLogout} />
+        <HomeList
+          companyId={companyId}
+          receipts={apiReceipts}
+          error={listError}
+          captureError={captureError}
+          onLogout={onLogout}
+          onOpenCamera={() => void openCamera()}
+          onUpload={() => void uploadPicture()}
+          onFakeReceipt={(imageId) => {
+            setCaptureError(null);
+            setVisit({ imageId });
+          }}
+        />
       </SafeAreaView>
     );
   }

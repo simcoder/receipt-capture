@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { openMatches } from "../receipts/matchReceipt";
 import {
   captureDraft,
@@ -8,6 +8,7 @@ import {
   SYNTHETIC_IMAGES,
   syntheticImageLabel,
   type LocalReceipt,
+  type ReceiptImageId,
   type SyntheticImageId,
 } from "../receipts/receiptDraft";
 
@@ -26,12 +27,15 @@ export function ReceiptCapture(props: {
   onConfirm: (localId: string, transactionId: string) => void;
   matchError: string | null;
   onLogout: () => void;
+  initialImageId?: ReceiptImageId;
+  photoBase64?: string;
+  onBack?: () => void;
 }) {
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [date, setDate] = useState("");
-  const [imageId, setImageId] = useState<SyntheticImageId | null>(null);
+  const [imageId, setImageId] = useState<ReceiptImageId | null>(props.initialImageId ?? null);
   const [error, setError] = useState<string | null>(null);
 
   function onSave() {
@@ -51,7 +55,7 @@ export function ReceiptCapture(props: {
       setAmount("");
       setCurrency("USD");
       setDate("");
-      setImageId(null);
+      setImageId(props.initialImageId ?? null);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Could not save the receipt");
     }
@@ -68,6 +72,11 @@ export function ReceiptCapture(props: {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
+      {props.onBack ? (
+        <Pressable onPress={props.onBack}>
+          <Text style={styles.back}>Back to receipts</Text>
+        </Pressable>
+      ) : null}
       <Text style={styles.title}>Receipt capture</Text>
       <Text style={styles.label}>Company</Text>
       <Text>{props.companyId}</Text>
@@ -109,26 +118,34 @@ export function ReceiptCapture(props: {
         value={date}
       />
 
-      <Text style={styles.label}>Synthetic image</Text>
-      <View style={styles.images}>
-        {SYNTHETIC_IMAGES.map((image) => {
-          const selected = image.id === imageId;
-          return (
-            <Pressable
-              key={image.id}
-              onPress={() => setImageId(image.id)}
-              style={[styles.imageCard, selected ? styles.imageCardSelected : null]}
-            >
-              <View style={[styles.swatch, { backgroundColor: IMAGE_COLORS[image.id] }]}>
-                <View style={styles.line} />
-                <View style={[styles.line, styles.lineShort]} />
-                <View style={styles.line} />
-              </View>
-              <Text style={styles.imageLabel}>{image.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <Text style={styles.label}>{props.photoBase64 ? "Photo" : "Synthetic image"}</Text>
+      {props.photoBase64 ? (
+        <Image
+          accessibilityLabel="Receipt photo"
+          source={{ uri: `data:image/jpeg;base64,${props.photoBase64}` }}
+          style={styles.photo}
+        />
+      ) : (
+        <View style={styles.images}>
+          {SYNTHETIC_IMAGES.map((image) => {
+            const selected = image.id === imageId;
+            return (
+              <Pressable
+                key={image.id}
+                onPress={() => setImageId(image.id)}
+                style={[styles.imageCard, selected ? styles.imageCardSelected : null]}
+              >
+                <View style={[styles.swatch, { backgroundColor: IMAGE_COLORS[image.id] }]}>
+                  <View style={styles.line} />
+                  <View style={[styles.line, styles.lineShort]} />
+                  <View style={styles.line} />
+                </View>
+                <Text style={styles.imageLabel}>{image.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Pressable style={styles.primary} onPress={onSave}>
@@ -235,7 +252,9 @@ function MatchChoices(props: {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 24, gap: 8, paddingBottom: 48 },
+  back: { color: "#1f3a2e", fontWeight: "600", marginBottom: 8 },
   title: { fontSize: 28, fontWeight: "600", marginBottom: 8 },
+  photo: { width: "100%", height: 180, borderRadius: 8, backgroundColor: "#eee" },
   section: { fontSize: 20, fontWeight: "600", marginTop: 16 },
   label: { fontSize: 13, color: "#555", marginTop: 8 },
   input: {

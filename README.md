@@ -40,7 +40,7 @@ flowchart LR
 
 | Layer | What it uses |
 | --- | --- |
-| Client | Expo 57, expo-router, React 19, React Native 0.86, TypeScript 5.8 |
+| Client | Expo 57, expo-router, expo-image-picker, React 19, React Native 0.86, TypeScript 5.8 |
 | Sign-in | Cognito user pool, `USER_PASSWORD_AUTH`, no hosted UI. `custom:company_id` on the user. Tokens in expo-secure-store. |
 | Device copy | AsyncStorage for receipt metadata. A banner is green when the device has a network and red when it does not. Image bytes and tokens are not stored there. |
 | Domain | TypeScript in `src/domain/`. Node 22 tests. Money is integer minor units. Dates are `MM-DD-YYYY`. |
@@ -74,6 +74,7 @@ Started 2026-10-29. Spec 001, the plan that shipped, is [.spec/001-initial-poc.m
 | Spec 002 | [.spec/002-ux.md](.spec/002-ux.md). Issues 26–30. |
 | Home list | Issue 26. After sign-in, the screen lists that company's receipts from `GET /receipts`, with merchant, amount, date, and status. |
 | Connectivity banner | Issue 27. The Offline switch is gone. The banner is green online and red offline. A returning network does not submit. |
+| Capture entry | Issue 28. A round camera button, upload from the library, or **Use a fake receipt** opens the same form. A photo stays in memory and is sent only when online and under 500 KB. |
 
 ## Run the tests
 
