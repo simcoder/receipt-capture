@@ -20,6 +20,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Issue 10 wires submit to `POST /receipts` with `Idempotency-Key`. A lost success is retried with the same key and returns the same receipt. If the API cannot be reached, the app uses a local fake with that same rule.
 - 2026-10-30: Issue 11 adds the match choices on a NeedsReview receipt. The user confirms one open transaction. A second receipt cannot take it. A later processor result leaves that correction in place.
 - 2026-10-30: Spec 001 in `.spec/001-initial-poc.md` is the completed plan, issues 1–11. The demo script, AI usage notes, and recording are not part of that spec.
+- 2026-10-30: Spec 002 in `.spec/002-ux.md` is the UX plan. The screens change. The rules from spec 001 do not.
 
 ## Accepted
 
@@ -95,6 +96,10 @@ The client assigns one key per local receipt and sends it as `Idempotency-Key` o
 
 A NeedsReview receipt lists open transactions that share company, currency, and minor units and have merchant overlap. Confirm match sends that transaction id to `POST /receipts/{id}/match`. The screen copies the Confirmed status from that response. One transaction cannot take two receipts. If the user has corrected the receipt, a later processor result does not change the status or the matched transaction. With no API, the same rules run in the local fake.
 
+### D19. Spec 002 changes screens only
+
+The home list, connectivity banner, camera, photo library, fake receipt, date picker, and currency mask are presentation. They do not add a status, a second submit path, or an edit of a submitted receipt. Logout still clears the device queue. Sign-in then loads that company's receipts from the API. The iOS Simulator uses **Use a fake receipt** because it has no camera.
+
 ## Out of scope
 
 Each item stays out until a later decision says otherwise.
@@ -113,4 +118,4 @@ Each item stays out until a later decision says otherwise.
 
 ## Still open
 
-None for spec 001. The next spec has not been written.
+Spec 002 is written in `.spec/002-ux.md` and is not built. Issues 26–30 on Project 4 are that work, in that order.
