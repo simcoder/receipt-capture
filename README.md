@@ -76,15 +76,21 @@ Started 2026-10-29. Spec 001, the plan that shipped, is [.spec/001-initial-poc.m
 | Connectivity banner | Issue 27. The Offline switch is gone. The banner is green online and red offline. A returning network does not submit. |
 | Capture entry | Issue 28. Home, a green Capture button, and Profile sit on a bottom menu. Capture opens the camera or the photo library. Profile shows the company and Log out. A photo stays in memory and is sent only when online and under 500 KB. |
 
-## Run the tests
+## Testing
+
+The test plan is [docs/test-plan.md](docs/test-plan.md). It lists the assignment outcomes, the receipt state diagram, and the checks already in this repo.
 
 Requires Node.js 22.18 or newer.
 
 ```bash
 npm install
-npm test
-npm run typecheck
+npm ci --prefix infra
+npm run test:all
 ```
+
+`npm run test:all` runs the domain tests, the typecheck, and the API rule tests. It prints how many of those three commands passed and exits non-zero if one fails. Pull requests run the same command in GitHub Actions.
+
+The simulator walk is separate. With the app open from `npm run ios`, install [Maestro](https://maestro.dev) and run `npm run record:simulator`. That taps through the signed-in app, checks the screen, and writes an mp4 under `maestro/recordings/`. Send that file if a reviewer asks for the walk. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` and restart Expo when you want the recording to include City Parking.
 
 ## Run locally
 

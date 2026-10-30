@@ -1,0 +1,37 @@
+appId: host.exp.Exponent
+---
+- tapOn: "Cafe receipt"
+- tapOn: "Northwind Cafe"
+- inputText: "City Parking"
+- tapOn: "12.34"
+- eraseText
+- inputText: "22.00"
+- tapOn: "Choose date"
+- tapOn: "15"
+- assertVisible: "10-15-2026"
+- scrollUntilVisible:
+    element: "Queue receipt"
+    direction: DOWN
+- tapOn: "Queue receipt"
+- extendedWaitUntil:
+    visible: "NeedsReview"
+    timeout: 30000
+- assertVisible: "City Parking"
+- tapOn: "City Parking"
+- assertVisible: "Review"
+- assertVisible: "Airport Parking"
+- assertVisible: "Confirm match"
+- swipe:
+    from:
+      id: "sheet-handle"
+    direction: DOWN
+    duration: 600
+- extendedWaitUntil:
+    visible: "NeedsReview"
+    timeout: 10000
+- tapOn: "City Parking"
+- tapOn: "Confirm match"
+- extendedWaitUntil:
+    visible: "Confirmed"
+    timeout: 30000
+- assertVisible: "City Parking"

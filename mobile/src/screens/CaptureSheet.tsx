@@ -41,6 +41,7 @@ export function CaptureSheet(props: { children: ReactNode; onDismiss: () => void
       <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
         <View
           accessibilityLabel="Pull down to dismiss"
+          testID="sheet-handle"
           style={styles.handleHit}
           {...pan.panHandlers}
         >
