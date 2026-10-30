@@ -18,12 +18,9 @@ appId: host.exp.Exponent
     direction: DOWN
 - tapOn: "Receipt capture"
 - tapOn: "Submit"
-- runFlow:
-    when:
-      visible: "Submit"
-    commands:
-      - tapOn: "Receipt capture"
-      - tapOn: "Submit"
+- tapOn:
+    text: "Submit"
+    optional: true
 - extendedWaitUntil:
     visible: "Upload failed. Try again."
     timeout: 30000
