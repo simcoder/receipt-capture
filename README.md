@@ -90,7 +90,7 @@ npm run test:all
 
 `npm run test:all` runs the domain tests, the typecheck, and the API rule tests. It prints how many of those three commands passed and exits non-zero if one fails. Pull requests run the same command in GitHub Actions.
 
-The simulator walk is separate. Install Maestro with `curl -Ls "https://get.maestro.mobile.dev" | bash` and a JDK with `brew install openjdk@21`. With the app open from `npm run ios`, run `npm run record:simulator`. That taps through the signed-in app, checks the screen, and writes an mp4 under `maestro/recordings/`. Commit that file after the run. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` and restart Expo when you want the recording to include City Parking.
+The simulator walk is separate. Install Maestro with `curl -Ls "https://get.maestro.mobile.dev" | bash` and a JDK with `brew install openjdk@21`. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` in `mobile/.env` and restart Expo. With the app open from `npm run ios`, run `npm run record:simulator`. That clears the receipt tables, then signs in as northwind and checks a 100% match (Blue Bottle at 18.50 USD), an 80% match (Blue Bottle Coffee at 18.50 USD), a NeedsReview match (City Parking at 22.00 USD, left unmatched), a failed upload with Retry, and a contoso sign-in that cannot see the northwind receipts. The video is an mp4 under `maestro/recordings/`. Commit that mp4 after the run. `npm run clear:receipts` clears the tables without recording.
 
 ## Run locally
 

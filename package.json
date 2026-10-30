@@ -10,7 +10,8 @@
     "record:simulator": "sh scripts/record-simulator.sh",
     "ios": "npm run ios --prefix mobile",
     "seed:photos": "npm run seed:photos --prefix mobile",
-    "seeds": "node scripts/seed-transactions.mjs"
+    "seeds": "node scripts/seed-transactions.mjs",
+    "clear:receipts": "node scripts/clear-receipts.mjs"
   },
   "engines": {
     "node": ">=22.18"

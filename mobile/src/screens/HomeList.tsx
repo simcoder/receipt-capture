@@ -53,7 +53,7 @@ export function HomeList(props: {
         return (
           <Pressable
             key={receipt.receiptId}
-            accessibilityLabel={`Review ${receipt.merchant}`}
+            accessible={false}
             style={styles.receipt}
             onPress={() => props.onReview(receipt.receiptId)}
           >

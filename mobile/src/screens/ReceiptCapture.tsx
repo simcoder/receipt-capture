@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { dateFromStored, formatDateOnly, maskAmount } from "../receipts/captureFields";
 import { openMatches } from "../receipts/matchReceipt";
@@ -101,7 +101,9 @@ export function ReceiptCapture(props: {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>Receipt capture</Text>
+      <Pressable accessibilityLabel="Receipt capture" onPress={() => Keyboard.dismiss()}>
+        <Text style={styles.title}>Receipt capture</Text>
+      </Pressable>
       <Text style={styles.label}>Company</Text>
       <Text>{props.companyId}</Text>
       <Text style={styles.note}>The queue is saved on this device and comes back after relaunch.</Text>

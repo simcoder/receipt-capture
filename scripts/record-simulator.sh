@@ -29,13 +29,16 @@ if ! xcrun simctl list devices booted | grep -q Booted; then
   exit 1
 fi
 
+echo "Clearing saved receipts so the walk can run again."
+node scripts/clear-receipts.mjs
+
 stamp=$(date +%Y%m%d-%H%M%S)
 out="maestro/recordings"
 mkdir -p "$out"
 video="$out/walk-$stamp.mp4"
 
 echo "Recording $video"
-echo "The app should already be open in Expo Go. For the City Parking steps, set EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1 and restart Expo before this run."
+echo "The app should already be open in Expo Go. EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1 must be set, then Expo restarted, so the walk can pick Cafe receipt."
 
 maestro record --local \
   --debug-output "$out/debug-$stamp" \

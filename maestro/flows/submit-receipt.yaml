@@ -1,0 +1,29 @@
+appId: host.exp.Exponent
+---
+- tapOn: "Capture"
+- extendedWaitUntil:
+    visible: "Use a fake receipt"
+    timeout: 15000
+- tapOn: "Cafe receipt"
+- tapOn: "Northwind Cafe"
+- inputText: ${MERCHANT}
+- tapOn: "12.34"
+- eraseText: 20
+- inputText: ${AMOUNT}
+- tapOn: "Receipt capture"
+- tapOn: "Choose date"
+- tapOn: "15"
+- scrollUntilVisible:
+    element: "Submit"
+    direction: DOWN
+- tapOn: "Receipt capture"
+- tapOn: "Submit"
+- runFlow:
+    when:
+      visible: "Submit"
+    commands:
+      - tapOn: "Receipt capture"
+      - tapOn: "Submit"
+- extendedWaitUntil:
+    visible: ${EXPECT}
+    timeout: 30000
