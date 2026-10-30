@@ -25,7 +25,7 @@ npx cdk synth
 npm run deploy
 ```
 
-`npm run deploy` builds the portal, then deploys. CloudFront serves that build at the `PortalUrl` output. The portal bucket blocks direct public reads. `config.json` on the site is written from the stack outputs and is not baked into the JavaScript build.
+`npm run deploy` builds the portal, then deploys. CloudFront serves that build at [https://dyn2tqabuofe2.cloudfront.net](https://dyn2tqabuofe2.cloudfront.net). The stack output `PortalUrl` is that address. The portal bucket blocks direct public reads. `config.json` on the site is written from the stack outputs and is not baked into the JavaScript build. How to run the portal locally is in the repo [README](../README.md#review-portal).
 
 After the presentation:
 
