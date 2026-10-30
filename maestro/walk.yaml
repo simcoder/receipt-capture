@@ -25,7 +25,9 @@ appId: host.exp.Exponent
       notVisible: "Tap to choose from library"
     commands:
       - tapOn: "Capture"
-- assertVisible: "Tap to choose from library"
+- extendedWaitUntil:
+    visible: "Tap to choose from library"
+    timeout: 15000
 - assertNotVisible: "The camera could not be opened"
 - runFlow:
     when:

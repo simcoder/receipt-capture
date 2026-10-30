@@ -12,7 +12,7 @@ export function CaptureScreen(props: {
     <View style={styles.screen}>
       <Text style={styles.title}>Capture</Text>
       <Text style={styles.hint}>Camera opens when you tap Capture. Or choose a photo from your library below.</Text>
-      <Pressable accessibilityLabel="Choose from library" style={styles.library} onPress={props.onUpload}>
+      <Pressable accessibilityLabel="Tap to choose from library" style={styles.library} onPress={props.onUpload}>
         <Ionicons name="images-outline" size={42} color="#616b66" />
         <Text style={styles.libraryText}>Tap to choose from library</Text>
       </Pressable>
