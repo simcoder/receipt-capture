@@ -9,6 +9,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Opened the public repo and issues 1–13 at https://github.com/simcoder/receipt-capture. All thirteen are on GitHub Project 4: https://github.com/users/simcoder/projects/4.
 - 2026-10-29: Issue 1 publishes the README, this decision log, and the Node harness from this folder's own git root. Domain code and `infra/` stay uncommitted until those issues are in review.
 - 2026-10-29: Code changes land through a pull request. A task that does not change this repo does not need one.
+- 2026-10-29: Issue 2 sets receipt dates to `MM-DD-YYYY` and stores amounts as integer minor units.
 
 ## Accepted
 
@@ -26,7 +27,7 @@ Amounts are parsed from decimal strings into an integer number of minor units pl
 
 ### D4. Receipt dates are calendar dates
 
-A receipt date is `YYYY-MM-DD`. Timestamps are rejected. The value is not converted through a local timezone.
+A receipt date is `MM-DD-YYYY`. Timestamps and `YYYY-MM-DD` are rejected. The value is not converted through a local timezone.
 
 ### D5. Confirmed is not a local queue state
 
