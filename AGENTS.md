@@ -37,7 +37,7 @@ const rows = await api.getReceipts(companyId);
 
 `apiRequest` returns `{ ok, status, payload }`. A thrown `fetch` becomes `ApiTransportError`. An HTTP error is returned, not thrown. The caller treats status 500 and above as a transport failure and shows a 4xx message. The bearer token is the ID token.
 
-Do not add React Query. Do not add an offline switch. Cafe, fuel, and office stay hidden unless `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS` is `1`. The amount field goes through `maskAmount`. The date field is a picker and stores `MM-DD-YYYY`. Submit still uses `moneyFromDecimal`. Only a NeedsReview row opens, and its fields stay read-only. Confirm uses the existing match call. The banner follows the device network. A returning network does not submit a receipt. A receipt photo stays in memory for that visit. Do not write image bytes to AsyncStorage. `submitReceipt` sends `imageBase64` only when online and the image is under 500 KB.
+Do not add React Query. Do not add an offline switch. Cafe, fuel, and office stay hidden unless `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS` is `1`. The amount field goes through `maskAmount`. The date field is a picker and stores `MM-DD-YYYY`. Submit still uses `moneyFromDecimal`. Notes are optional. An empty note still submits. While online the capture button says Submit and the server validates the receipt. While offline it says Queue receipt. A returning network submits receipts that are still Queued. Only a NeedsReview row opens, and its fields stay read-only. Confirm uses the existing match call. The banner follows the device network. A receipt photo stays in memory for that visit. Do not write image bytes to AsyncStorage. `submitReceipt` sends `imageBase64` only when online and the image is under 500 KB.
 
 ## Names and packages
 

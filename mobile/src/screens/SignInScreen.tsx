@@ -8,7 +8,7 @@ import { useSession } from "../providers/session-provider";
 import { clearCompanyQueue, loadLocalSession, saveQueue } from "../storage/localQueue";
 import { deviceStore } from "../storage/deviceStore";
 import { chooseReceiptPhoto, takeReceiptPhoto } from "../receipts/pickReceiptImage";
-import { DEVICE_PHOTO_ID, queueDraft, type LocalReceipt, type ReceiptImageId } from "../receipts/receiptDraft";
+import { DEVICE_PHOTO_ID, queueDraft, receiptsWaitingToSubmit, type LocalReceipt, type ReceiptImageId } from "../receipts/receiptDraft";
 import { type CompanyReceipt } from "../receipts/receiptList";
 import { clearFake } from "../receipts/submitReceipt";
 import { AppMenu, type AppTab } from "./AppMenu";
@@ -89,8 +89,9 @@ export default function SignInScreen() {
   }, [api, idToken, companyId]);
 
   useEffect(() => {
-    if (!previewing || !companyId) {
+    if (!companyId || (!idToken && !previewing)) {
       setQueueReady(false);
+      setCanPersist(false);
       return;
     }
     let cancelled = false;
@@ -114,7 +115,7 @@ export default function SignInScreen() {
     return () => {
       cancelled = true;
     };
-  }, [previewing, companyId]);
+  }, [companyId, idToken, previewing]);
 
   useEffect(() => {
     if (!canPersist || !companyId) return;
@@ -201,6 +202,11 @@ export default function SignInScreen() {
       idempotencyKey: draft.idempotencyKey ?? `local-${draft.localId}`,
     };
     setReceipts((current) => [...current, queued]);
+    if (offline) {
+      setVisit(null);
+      setTab("home");
+      return;
+    }
     try {
       await send(queued);
     } catch (submitError) {
@@ -292,6 +298,21 @@ export default function SignInScreen() {
     }
   }
 
+  const receiptsRef = useRef(receipts);
+  receiptsRef.current = receipts;
+  const sendingIds = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (offline || !idToken || !companyId || !queueReady) return;
+    for (const receipt of receiptsWaitingToSubmit(receiptsRef.current)) {
+      if (sendingIds.current.has(receipt.localId)) continue;
+      sendingIds.current.add(receipt.localId);
+      void send(receipt).catch(() => {
+        sendingIds.current.delete(receipt.localId);
+      });
+    }
+  }, [offline, idToken, companyId, queueReady]);
+
   if (session.busy && !showCapture) {
     return (
       <View style={styles.centered}>
@@ -336,14 +357,25 @@ export default function SignInScreen() {
   }
 
   if (idToken) {
-    const review = apiReceipts.find((row) => row.receiptId === reviewId && row.status === "NeedsReview");
+    const waiting = receiptsWaitingToSubmit(receipts).map((receipt) => ({
+      receiptId: receipt.localId,
+      companyId: receipt.companyId,
+      merchant: receipt.merchant,
+      amountMinor: receipt.amountMinor,
+      currency: receipt.currency,
+      date: receipt.date,
+      status: receipt.status,
+    }));
+    const waitingIds = new Set(waiting.map((receipt) => receipt.receiptId));
+    const homeReceipts = [...waiting, ...apiReceipts.filter((receipt) => !waitingIds.has(receipt.receiptId))];
+    const review = homeReceipts.find((row) => row.receiptId === reviewId && row.status === "NeedsReview");
     return (
       <SafeAreaView style={styles.screen} edges={["bottom"]}>
         <View style={styles.screen}>
           {tab === "home" ? (
             <HomeList
               companyId={companyId}
-              receipts={apiReceipts}
+              receipts={homeReceipts}
               error={listError}
               onReview={(receiptId) => {
                 setMatchError(null);
@@ -387,6 +419,7 @@ export default function SignInScreen() {
               photoBase64={visit.photoBase64}
               onBack={() => setVisit(null)}
               onSubmit={submitVisit}
+              online={online}
             />
           </CaptureSheet>
         ) : null}
