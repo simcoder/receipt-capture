@@ -4,6 +4,7 @@ import {
   applyProcessorResult,
   candidateMatches,
   fakeProcessor,
+  isFailUpload,
   moneyFromDecimal,
   parseDateOnly,
   seedTransactions,
@@ -37,6 +38,8 @@ describe("infra receipt rules", () => {
     assert.equal(confirmed.confidence, 0.8);
     assert.equal(review.kind, "needs_review");
     assert.equal(review.confidence, 1 / 3);
+    assert.equal(isFailUpload("Fail Upload"), true);
+    assert.equal(isFailUpload("Blue Bottle"), false);
     assert.deepEqual(
       candidateMatches(coffee, seedTransactions, new Set()).map((match) => match.transactionId),
       ["txn-blue-bottle"],

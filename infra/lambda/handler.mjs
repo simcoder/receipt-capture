@@ -12,6 +12,7 @@ import {
   applyProcessorResult,
   candidateMatches,
   fakeProcessor,
+  isFailUpload,
   moneyFromDecimal,
   parseDateOnly,
   seedTransactions,
@@ -121,14 +122,16 @@ async function createReceipt(companyId, event) {
 
   const receiptId = randomUUID();
   const siblings = await listReceipts(companyId);
-  const decision = applyProcessorResult(
-    { status: "Processing", userCorrected: false },
-    fakeProcessor(
-      { id: receiptId, companyId, merchant, money },
-      seedTransactions,
-      takenTransactionIds(siblings),
-    ),
-  );
+  const decision = isFailUpload(merchant)
+    ? { status: "Failed", userCorrected: false }
+    : applyProcessorResult(
+        { status: "Processing", userCorrected: false },
+        fakeProcessor(
+          { id: receiptId, companyId, merchant, money },
+          seedTransactions,
+          takenTransactionIds(siblings),
+        ),
+      );
 
   let objectKey;
   if (body.imageBase64) {
@@ -157,9 +160,9 @@ async function createReceipt(companyId, event) {
     date,
     status: decision.status,
     matchedTransactionId: decision.matchedTransactionId,
-    confidence: decision.confidence ?? 0,
     userCorrected: false,
     objectKey,
+    ...(typeof decision.confidence === "number" ? { confidence: decision.confidence } : {}),
   };
 
   try {

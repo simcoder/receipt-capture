@@ -20,3 +20,6 @@ const widths = rows[0].map((_, index) => Math.max(...rows.map((row) => row[index
 for (const row of rows) {
   console.log(row.map((cell, index) => cell.padEnd(widths[index])).join("  "));
 }
+console.log("");
+console.log('Fail the upload: merchant "Fail Upload"');
+console.log("Retry on that receipt runs the processor on the same receipt.");

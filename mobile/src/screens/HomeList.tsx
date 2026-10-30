@@ -8,6 +8,7 @@ export function HomeList(props: {
   receipts: readonly CompanyReceipt[];
   error: string | null;
   onReview: (receiptId: string) => void;
+  onRetry: (receiptId: string) => void;
 }) {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -28,6 +29,19 @@ export function HomeList(props: {
             ) : null}
           </>
         );
+        if (receipt.status === "Failed") {
+          return (
+            <View key={receipt.receiptId} style={styles.receipt}>
+              {body}
+              <Pressable
+                accessibilityLabel={`Retry ${receipt.merchant}`}
+                onPress={() => props.onRetry(receipt.receiptId)}
+              >
+                <Text style={styles.retry}>Retry</Text>
+              </Pressable>
+            </View>
+          );
+        }
         if (receipt.status !== "NeedsReview") {
           return (
             <View key={receipt.receiptId} style={styles.receipt}>
@@ -65,6 +79,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   merchant: { fontSize: 16, fontWeight: "600" },
+  retry: { color: "#0f381f", fontWeight: "600", marginTop: 4 },
   status: {
     alignSelf: "flex-start",
     marginTop: 4,

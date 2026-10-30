@@ -32,8 +32,15 @@ export type ReviewState = {
   confidence?: number;
 };
 
+export const FAIL_UPLOAD_MERCHANT = "Fail Upload";
+
 export function normalizeMerchant(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** The first submit of this merchant is a rejected transfer. Retry then runs the normal processor. */
+export function isFailUpload(merchant: string): boolean {
+  return normalizeMerchant(merchant) === normalizeMerchant(FAIL_UPLOAD_MERCHANT);
 }
 
 /** Token overlap after normalization. 1 when the normalized names are equal. */

@@ -11,6 +11,7 @@ import { chooseReceiptPhoto, takeReceiptPhoto } from "../receipts/pickReceiptIma
 import { DEVICE_PHOTO_ID, queueDraft, receiptsWaitingToSubmit, type LocalReceipt, type ReceiptImageId } from "../receipts/receiptDraft";
 import { type CompanyReceipt } from "../receipts/receiptList";
 import { clearFake } from "../receipts/submitReceipt";
+import { colors } from "../theme/colors";
 import { AppMenu, type AppTab } from "./AppMenu";
 import { CaptureScreen } from "./CaptureScreen";
 import { CaptureSheet } from "./CaptureSheet";
@@ -34,6 +35,7 @@ export default function SignInScreen() {
   const [matchError, setMatchError] = useState<string | null>(null);
   const [apiReceipts, setApiReceipts] = useState<CompanyReceipt[]>([]);
   const [listError, setListError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [listReady, setListReady] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [visit, setVisit] = useState<{ imageId: ReceiptImageId; photoBase64?: string } | null>(null);
@@ -142,6 +144,7 @@ export default function SignInScreen() {
     setReceipts(cleared.queue);
     setApiReceipts([]);
     setListError(null);
+    setToast(null);
     setCaptureError(null);
     setVisit(null);
     setReviewId(null);
@@ -194,6 +197,7 @@ export default function SignInScreen() {
       submitSource: result.source,
       ...(result.matchedTransactionId ? { matchedTransactionId: result.matchedTransactionId } : {}),
     });
+    if (result.status === "Failed") setToast("Upload failed. Try again.");
   }
 
   async function submitVisit(draft: LocalReceipt) {
@@ -232,6 +236,36 @@ export default function SignInScreen() {
       await send(queued);
     } catch (submitError) {
       setQueueError(submitError instanceof Error ? submitError.message : "Could not submit the receipt");
+    }
+  }
+
+  async function retryReceipt(receiptId: string) {
+    if (!companyId) return;
+    setListError(null);
+    try {
+      const result = await api.retry({
+        store: deviceStore,
+        companyId,
+        receiptId,
+        offline,
+      });
+      setApiReceipts((rows) =>
+        rows.map((row) =>
+          row.receiptId === receiptId
+            ? {
+                ...row,
+                status: result.status,
+                ...(result.matchedTransactionId ? { matchedTransactionId: result.matchedTransactionId } : {}),
+                ...(typeof result.confidence === "number" ? { confidence: result.confidence } : {}),
+              }
+            : row,
+        ),
+      );
+      setToast(null);
+      const refreshed = await api.getReceipts(companyId).catch(() => null);
+      if (refreshed) setApiReceipts(refreshed);
+    } catch (retryError) {
+      setListError(retryError instanceof Error ? retryError.message : "Could not retry the receipt");
     }
   }
 
@@ -315,6 +349,12 @@ export default function SignInScreen() {
     }
   }, [offline, idToken, companyId, queueReady]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
   if (session.busy && !showCapture) {
     return (
       <View style={styles.centered}>
@@ -383,6 +423,7 @@ export default function SignInScreen() {
                 setMatchError(null);
                 setReviewId(receiptId);
               }}
+              onRetry={(receiptId) => void retryReceipt(receiptId)}
             />
           ) : null}
           {tab === "capture" ? (
@@ -397,6 +438,11 @@ export default function SignInScreen() {
           ) : null}
           {tab === "profile" ? <ProfileScreen companyId={companyId} onLogout={onLogout} /> : null}
         </View>
+        {toast ? (
+          <Pressable accessibilityRole="alert" style={styles.toast} onPress={() => setToast(null)}>
+            <Text style={styles.toastText}>{toast}</Text>
+          </Pressable>
+        ) : null}
         <AppMenu
           tab={tab}
           onHome={() => setTab("home")}
@@ -519,6 +565,17 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: "#0f381f", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
   primaryText: { color: "#fff", fontWeight: "600" },
+  toast: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 96,
+    backgroundColor: colors.destructive,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  toastText: { color: colors.primaryForeground, fontWeight: "600" },
   secondary: {
     borderWidth: 1,
     borderColor: "#0f381f",

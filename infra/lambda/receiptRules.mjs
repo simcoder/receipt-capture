@@ -33,6 +33,12 @@ export function parseDateOnly(value) {
   return `${match[1]}-${match[2]}-${match[3]}`;
 }
 
+export const FAIL_UPLOAD_MERCHANT = "Fail Upload";
+
+export function isFailUpload(merchant) {
+  return normalizeMerchant(merchant) === normalizeMerchant(FAIL_UPLOAD_MERCHANT);
+}
+
 export function normalizeMerchant(value) {
   return String(value ?? "")
     .toLowerCase()

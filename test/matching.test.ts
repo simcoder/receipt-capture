@@ -8,6 +8,7 @@ import {
   candidateMatches,
   confirmMatch,
   fakeProcessor,
+  isFailUpload,
   type ReceiptForMatch,
   type SeedTransaction,
 } from "../src/domain/matching.ts";
@@ -96,5 +97,11 @@ describe("matching", () => {
     const saved = applyProcessorResult({ status: "Processing", userCorrected: false }, decided);
     assert.equal(saved.status, "Confirmed");
     assert.equal(saved.confidence, 0.8);
+  });
+
+  it("treats Fail Upload as the rejected transfer, in any letter case", () => {
+    assert.equal(isFailUpload("Fail Upload"), true);
+    assert.equal(isFailUpload("  fail   upload "), true);
+    assert.equal(isFailUpload("Blue Bottle"), false);
   });
 });
