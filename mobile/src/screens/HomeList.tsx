@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { formatMoney } from "../receipts/receiptDraft";
+import { formatConfidence } from "../receipts/receiptList";
 import type { CompanyReceipt } from "../receipts/receiptList";
 
 export function HomeList(props: {
@@ -7,6 +8,7 @@ export function HomeList(props: {
   receipts: readonly CompanyReceipt[];
   error: string | null;
   onReview: (receiptId: string) => void;
+  onRetry: (receiptId: string) => void;
 }) {
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
@@ -22,8 +24,25 @@ export function HomeList(props: {
             <Text>{formatMoney(receipt.amountMinor, receipt.currency)}</Text>
             <Text>{receipt.date}</Text>
             <Text style={styles.status}>{receipt.status}</Text>
+            {typeof receipt.confidence === "number" ? (
+              <Text>{formatConfidence(receipt.confidence)}</Text>
+            ) : null}
           </>
         );
+        if (receipt.status === "Failed") {
+          return (
+            <View key={receipt.receiptId} style={styles.receipt}>
+              {body}
+              <Pressable
+                accessibilityLabel={`Retry ${receipt.merchant}`}
+                style={styles.retry}
+                onPress={() => props.onRetry(receipt.receiptId)}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </Pressable>
+            </View>
+          );
+        }
         if (receipt.status !== "NeedsReview") {
           return (
             <View key={receipt.receiptId} style={styles.receipt}>
@@ -34,7 +53,7 @@ export function HomeList(props: {
         return (
           <Pressable
             key={receipt.receiptId}
-            accessibilityLabel={`Review ${receipt.merchant}`}
+            accessible={false}
             style={styles.receipt}
             onPress={() => props.onReview(receipt.receiptId)}
           >
@@ -61,6 +80,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   merchant: { fontSize: 16, fontWeight: "600" },
+  retry: {
+    marginTop: 8,
+    backgroundColor: "#0f381f",
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  retryText: { color: "#fff", fontWeight: "600" },
   status: {
     alignSelf: "flex-start",
     marginTop: 4,

@@ -7,6 +7,8 @@ import {
   applyUserCorrection,
   candidateMatches,
   confirmMatch,
+  fakeProcessor,
+  isFailUpload,
   type ReceiptForMatch,
   type SeedTransaction,
 } from "../src/domain/matching.ts";
@@ -70,6 +72,7 @@ describe("matching", () => {
     const late = applyProcessorResult(corrected, {
       kind: "confirmed",
       transactionId: "txn-other-amount",
+      confidence: 1,
     });
     assert.equal(late.matchedTransactionId, "txn-close");
     assert.equal(late.status, "Confirmed");
@@ -79,9 +82,26 @@ describe("matching", () => {
   it("lets the processor send NeedsReview before the user corrects it", () => {
     const reviewed = applyProcessorResult(
       { status: "Processing", userCorrected: false },
-      { kind: "needs_review" },
+      { kind: "needs_review", confidence: 0 },
     );
     assert.equal(reviewed.status, "NeedsReview");
+    assert.equal(reviewed.confidence, 0);
     assert.equal(reviewed.userCorrected, false);
+  });
+
+  it("stores the merchant score that confirmed the receipt", () => {
+    const decided = fakeProcessor(receipt, transactions);
+    assert.equal(decided.kind, "confirmed");
+    if (decided.kind !== "confirmed") return;
+    assert.equal(decided.confidence, 0.8);
+    const saved = applyProcessorResult({ status: "Processing", userCorrected: false }, decided);
+    assert.equal(saved.status, "Confirmed");
+    assert.equal(saved.confidence, 0.8);
+  });
+
+  it("treats Fail Upload as the rejected transfer, in any letter case", () => {
+    assert.equal(isFailUpload("Fail Upload"), true);
+    assert.equal(isFailUpload("  fail   upload "), true);
+    assert.equal(isFailUpload("Blue Bottle"), false);
   });
 });

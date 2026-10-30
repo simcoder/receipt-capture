@@ -1,0 +1,32 @@
+appId: host.exp.Exponent
+---
+- tapOn: "Capture"
+- extendedWaitUntil:
+    visible: "Use a fake receipt"
+    timeout: 15000
+- tapOn: "Cafe receipt"
+- tapOn: "Northwind Cafe"
+- inputText: "Fail Upload"
+- tapOn: "12.34"
+- eraseText: 20
+- inputText: "1.00"
+- tapOn: "Receipt capture"
+- tapOn: "Choose date"
+- tapOn: "15"
+- tapOn: "Receipt capture"
+- swipe:
+    direction: UP
+- extendedWaitUntil:
+    visible: "Submit"
+    timeout: 5000
+- tapOn: "Submit"
+- extendedWaitUntil:
+    visible: "Upload failed. Try again."
+    timeout: 30000
+- assertVisible: "Retry"
+- tapOn: "Retry"
+- extendedWaitUntil:
+    visible: "0.00 (0%)"
+    timeout: 30000
+- assertVisible: "NeedsReview"
+- assertVisible: "Fail Upload"

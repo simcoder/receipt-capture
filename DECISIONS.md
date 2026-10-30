@@ -27,6 +27,10 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Issue 30 opens a NeedsReview receipt with the fields read-only and the existing Confirm match action. Other statuses stay on the list. Confirm still copies Confirmed from the match API. One transaction cannot take two receipts.
 - 2026-10-30: Issue 38 adds an optional notes field. Empty notes still submit.
 - 2026-10-30: Issue 39 submits while online. Offline capture stays Queued on the device, and a returning network submits those queued receipts. The client still does not mark Confirmed on its own.
+- 2026-10-30: The fake processor stores its confidence score on the receipt. The list shows that score as a decimal and a percent. A score of 0.8 or higher still confirms the match.
+- 2026-10-30: Merchant `Fail Upload` rejects the transfer. The receipt is Failed and keeps the same id. Retry runs the processor on that receipt.
+- 2026-10-30: Northwind seed `txn-harbor` is Harbor at 24.00 USD. Harbor Grill confirms at 0.8 against that transaction, so the 80% check does not reuse the Blue Bottle transaction.
+- 2026-10-30: Leaving the amount field shows two decimal places. `18` displays as `18.00` and is still 1800 minor units. `1320` displays as `1320.00`. The decimal point is not moved.
 - 2026-10-30: Spec 003 adds a public review portal. CloudFront serves the static files. The S3 bucket stays closed to direct public reads. The phone still creates receipts. The portal confirms a NeedsReview match or retries a Failed receipt and does not edit the submitted fields.
 
 ## Accepted

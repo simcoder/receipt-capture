@@ -4,6 +4,7 @@ import {
   applyProcessorResult,
   candidateMatches,
   fakeProcessor,
+  isFailUpload,
   moneyFromDecimal,
   parseDateOnly,
   seedTransactions,
@@ -31,8 +32,14 @@ describe("infra receipt rules", () => {
       merchant: "City Parking",
       money: { amountMinor: 2200, currency: "USD" },
     };
-    assert.equal(fakeProcessor(coffee, seedTransactions, new Set()).kind, "confirmed");
-    assert.equal(fakeProcessor(parking, seedTransactions, new Set()).kind, "needs_review");
+    const confirmed = fakeProcessor(coffee, seedTransactions, new Set());
+    const review = fakeProcessor(parking, seedTransactions, new Set());
+    assert.equal(confirmed.kind, "confirmed");
+    assert.equal(confirmed.confidence, 0.8);
+    assert.equal(review.kind, "needs_review");
+    assert.equal(review.confidence, 1 / 3);
+    assert.equal(isFailUpload("Fail Upload"), true);
+    assert.equal(isFailUpload("Blue Bottle"), false);
     assert.deepEqual(
       candidateMatches(coffee, seedTransactions, new Set()).map((match) => match.transactionId),
       ["txn-blue-bottle"],
@@ -48,7 +55,30 @@ describe("infra receipt rules", () => {
     const late = applyProcessorResult(corrected, {
       kind: "confirmed",
       transactionId: "txn-parking",
+      confidence: 1,
     });
     assert.equal(late.matchedTransactionId, "txn-blue-bottle");
+  });
+
+  it("confirms Harbor Grill on its own seed after Blue Bottle is taken", () => {
+    const harbor = {
+      id: "rcpt-harbor",
+      companyId: "northwind",
+      merchant: "Harbor Grill",
+      money: { amountMinor: 2400, currency: "USD" },
+    };
+    const confirmed = fakeProcessor(harbor, seedTransactions, new Set(["txn-blue-bottle"]));
+    assert.equal(confirmed.kind, "confirmed");
+    assert.equal(confirmed.transactionId, "txn-harbor");
+    assert.equal(confirmed.confidence, 0.8);
+    const coffee = {
+      id: "rcpt-coffee",
+      companyId: "northwind",
+      merchant: "Blue Bottle Coffee",
+      money: { amountMinor: 1850, currency: "USD" },
+    };
+    const taken = fakeProcessor(coffee, seedTransactions, new Set(["txn-blue-bottle"]));
+    assert.equal(taken.kind, "needs_review");
+    assert.equal(taken.confidence, 0);
   });
 });

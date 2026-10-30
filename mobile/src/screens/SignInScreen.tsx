@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { afterLogout } from "../auth/cognitoAuth";
 import { useReceiptApi } from "../hooks/use-receipt-api";
@@ -11,6 +11,7 @@ import { chooseReceiptPhoto, takeReceiptPhoto } from "../receipts/pickReceiptIma
 import { DEVICE_PHOTO_ID, queueDraft, receiptsWaitingToSubmit, type LocalReceipt, type ReceiptImageId } from "../receipts/receiptDraft";
 import { type CompanyReceipt } from "../receipts/receiptList";
 import { clearFake } from "../receipts/submitReceipt";
+import { colors } from "../theme/colors";
 import { AppMenu, type AppTab } from "./AppMenu";
 import { CaptureScreen } from "./CaptureScreen";
 import { CaptureSheet } from "./CaptureSheet";
@@ -34,6 +35,8 @@ export default function SignInScreen() {
   const [matchError, setMatchError] = useState<string | null>(null);
   const [apiReceipts, setApiReceipts] = useState<CompanyReceipt[]>([]);
   const [listError, setListError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [failedReceiptId, setFailedReceiptId] = useState<string | null>(null);
   const [listReady, setListReady] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [visit, setVisit] = useState<{ imageId: ReceiptImageId; photoBase64?: string } | null>(null);
@@ -142,6 +145,7 @@ export default function SignInScreen() {
     setReceipts(cleared.queue);
     setApiReceipts([]);
     setListError(null);
+    setToast(null);
     setCaptureError(null);
     setVisit(null);
     setReviewId(null);
@@ -180,6 +184,7 @@ export default function SignInScreen() {
           currency: receipt.currency,
           date: receipt.date,
           status: result.status,
+          ...(typeof result.confidence === "number" ? { confidence: result.confidence } : {}),
         },
         ...current.filter((row) => row.receiptId !== result.receiptId),
       ]);
@@ -193,6 +198,14 @@ export default function SignInScreen() {
       submitSource: result.source,
       ...(result.matchedTransactionId ? { matchedTransactionId: result.matchedTransactionId } : {}),
     });
+    if (result.status === "Failed") {
+      setQueueError("Upload failed. Try again.");
+      setToast("Upload failed. Try again.");
+      setFailedReceiptId(result.receiptId);
+      return result.receiptId;
+    }
+    setFailedReceiptId(null);
+    return null;
   }
 
   async function submitVisit(draft: LocalReceipt) {
@@ -208,10 +221,12 @@ export default function SignInScreen() {
       return;
     }
     try {
-      await send(queued);
+      const failedId = await send(queued);
+      if (failedId) return;
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : "Could not submit the receipt";
       setQueueError(message);
+      setToast(message);
       throw new Error(message);
     }
     setVisit(null);
@@ -234,6 +249,43 @@ export default function SignInScreen() {
     }
   }
 
+  async function retryReceipt(receiptId: string) {
+    if (!companyId) return;
+    setListError(null);
+    setQueueError(null);
+    try {
+      const result = await api.retry({
+        store: deviceStore,
+        companyId,
+        receiptId,
+        offline,
+      });
+      setApiReceipts((rows) =>
+        rows.map((row) =>
+          row.receiptId === receiptId
+            ? {
+                ...row,
+                status: result.status,
+                ...(result.matchedTransactionId ? { matchedTransactionId: result.matchedTransactionId } : {}),
+                ...(typeof result.confidence === "number" ? { confidence: result.confidence } : {}),
+              }
+            : row,
+        ),
+      );
+      setToast(null);
+      setFailedReceiptId(null);
+      setVisit(null);
+      setTab("home");
+      const refreshed = await api.getReceipts(companyId).catch(() => null);
+      if (refreshed) setApiReceipts(refreshed);
+    } catch (retryError) {
+      const message = retryError instanceof Error ? retryError.message : "Could not retry the receipt";
+      setListError(message);
+      setQueueError(message);
+      setToast("Upload failed. Try again.");
+    }
+  }
+
   async function confirmReview(receiptId: string, transactionId: string) {
     const current = apiReceipts.find((row) => row.receiptId === receiptId);
     if (!current || current.status !== "NeedsReview") return;
@@ -250,6 +302,7 @@ export default function SignInScreen() {
         ...current,
         status: result.status,
         matchedTransactionId: result.matchedTransactionId,
+        ...(typeof result.confidence === "number" ? { confidence: result.confidence } : {}),
       };
       setApiReceipts((rows) => rows.map((row) => (row.receiptId === receiptId ? confirmed : row)));
       setReviewId(null);
@@ -381,6 +434,7 @@ export default function SignInScreen() {
                 setMatchError(null);
                 setReviewId(receiptId);
               }}
+              onRetry={(receiptId) => void retryReceipt(receiptId)}
             />
           ) : null}
           {tab === "capture" ? (
@@ -419,6 +473,7 @@ export default function SignInScreen() {
               photoBase64={visit.photoBase64}
               onBack={() => setVisit(null)}
               onSubmit={submitVisit}
+              onRetry={failedReceiptId ? () => retryReceipt(failedReceiptId) : undefined}
               online={online}
             />
           </CaptureSheet>
@@ -432,6 +487,11 @@ export default function SignInScreen() {
               onConfirm={(transactionId) => void confirmReview(review.receiptId, transactionId)}
             />
           </CaptureSheet>
+        ) : null}
+        {toast ? (
+          <Pressable accessibilityRole="alert" style={styles.toast} onPress={() => setToast(null)}>
+            <Text style={styles.toastText}>{toast}</Text>
+          </Pressable>
         ) : null}
       </SafeAreaView>
     );
@@ -464,7 +524,9 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={styles.centered} edges={["bottom"]}>
-      <Text style={styles.title}>Receipt capture</Text>
+      <Pressable accessibilityLabel="Receipt capture" onPress={() => Keyboard.dismiss()}>
+        <Text style={styles.title}>Receipt capture</Text>
+      </Pressable>
       <View style={styles.block}>
         <Text style={styles.hint}>Use northwind.demo or contoso.demo. Passwords are in infra/README.md.</Text>
         <TextInput
@@ -517,6 +579,17 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: "#0f381f", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
   primaryText: { color: "#fff", fontWeight: "600" },
+  toast: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 96,
+    backgroundColor: colors.destructive,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  toastText: { color: colors.primaryForeground, fontWeight: "600" },
   secondary: {
     borderWidth: 1,
     borderColor: "#0f381f",

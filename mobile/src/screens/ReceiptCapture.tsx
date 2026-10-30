@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { dateFromStored, formatDateOnly, maskAmount } from "../receipts/captureFields";
+import { dateFromStored, formatAmount, formatDateOnly, maskAmount } from "../receipts/captureFields";
 import { openMatches } from "../receipts/matchReceipt";
 import {
   captureDraft,
@@ -34,6 +34,7 @@ export function ReceiptCapture(props: {
   photoBase64?: string;
   onBack?: () => void;
   onSubmit?: (draft: LocalReceipt) => Promise<void>;
+  onRetry?: () => Promise<void>;
   online?: boolean;
 }) {
   const [merchant, setMerchant] = useState("");
@@ -47,13 +48,24 @@ export function ReceiptCapture(props: {
   const [saving, setSaving] = useState(false);
 
   async function onSave() {
+    if (props.onRetry) {
+      setSaving(true);
+      try {
+        await props.onRetry();
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     setError(null);
+    const shown = formatAmount(amount);
+    if (shown !== amount) setAmount(shown);
     try {
       const draft = captureDraft({
         localId: `local-${props.receipts.length + 1}`,
         companyId: props.companyId,
         merchant,
-        amount,
+        amount: shown,
         currency,
         date,
         imageId: imageId ?? "",
@@ -91,7 +103,9 @@ export function ReceiptCapture(props: {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>Receipt capture</Text>
+      <Pressable accessibilityLabel="Receipt capture" onPress={() => Keyboard.dismiss()}>
+        <Text style={styles.title}>Receipt capture</Text>
+      </Pressable>
       <Text style={styles.label}>Company</Text>
       <Text>{props.companyId}</Text>
       <Text style={styles.note}>The queue is saved on this device and comes back after relaunch.</Text>
@@ -110,6 +124,7 @@ export function ReceiptCapture(props: {
       <TextInput
         keyboardType="decimal-pad"
         onChangeText={(value) => setAmount(maskAmount(value))}
+        onEndEditing={() => setAmount((current) => formatAmount(current))}
         placeholder="12.34"
         style={styles.input}
         value={amount}
@@ -183,13 +198,19 @@ export function ReceiptCapture(props: {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Pressable
-        accessibilityLabel={captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })}
+        accessibilityLabel={
+          props.onRetry
+            ? "Retry"
+            : captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })
+        }
         style={styles.primary}
         onPress={() => void onSave()}
         disabled={saving}
       >
         <Text style={styles.primaryText}>
-          {captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })}
+          {props.onRetry
+            ? "Retry"
+            : captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })}
         </Text>
       </Pressable>
 
