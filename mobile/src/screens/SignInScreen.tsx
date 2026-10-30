@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { afterLogout } from "../auth/cognitoAuth";
 import { useReceiptApi } from "../hooks/use-receipt-api";
@@ -512,7 +512,9 @@ export default function SignInScreen() {
 
   return (
     <SafeAreaView style={styles.centered} edges={["bottom"]}>
-      <Text style={styles.title}>Receipt capture</Text>
+      <Pressable accessibilityLabel="Receipt capture" onPress={() => Keyboard.dismiss()}>
+        <Text style={styles.title}>Receipt capture</Text>
+      </Pressable>
       <View style={styles.block}>
         <Text style={styles.hint}>Use northwind.demo or contoso.demo. Passwords are in infra/README.md.</Text>
         <TextInput
