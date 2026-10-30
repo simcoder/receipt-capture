@@ -88,7 +88,9 @@ npm ci --prefix infra
 npm run test:all
 ```
 
-`npm run test:all` runs the domain tests, the typecheck, and the API rule tests. It prints how many of those three commands passed and exits non-zero if one fails. Pull requests run the same command in GitHub Actions. The simulator rows in the test plan are walked by hand.
+`npm run test:all` runs the domain tests, the typecheck, and the API rule tests. It prints how many of those three commands passed and exits non-zero if one fails. Pull requests run the same command in GitHub Actions.
+
+The simulator walk is separate. With the app open from `npm run ios`, install [Maestro](https://maestro.dev) and run `npm run record:simulator`. That taps through the signed-in app, checks the screen, and writes an mp4 under `maestro/recordings/`. Send that file if a reviewer asks for the walk. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` and restart Expo when you want the recording to include City Parking.
 
 ## Run locally
 

@@ -20,7 +20,7 @@ That runs three commands and prints how many passed:
 
 A failing command stops the run and the process exits non-zero. Pull requests and pushes to `main` run the same command in GitHub Actions. The check on the pull request is green when all three pass and red when one fails. No AWS credentials and no Expo build are required.
 
-Simulator rows below stay **Not run** until someone walks them in Expo. Press **r** in Metro to reload. No new native module is required.
+The simulator walk is `npm run record:simulator` after `npm run ios`. It needs [Maestro](https://maestro.dev) and a booted simulator with the app already open in Expo Go. The command runs `maestro/walk.yaml`, checks the screen, and writes `maestro/recordings/walk-<time>.mp4` plus a JUnit report. Send the mp4 if a reviewer asks for the walk. Those files stay off git. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` and restart Expo so the recording includes City Parking. Without that variable the recording still checks that Capture stays on the photo library.
 
 ## Types
 
@@ -28,7 +28,7 @@ Simulator rows below stay **Not run** until someone walks them in Expo. Press **
 | --- | --- |
 | Domain unit | `npm test` and `npm run typecheck` from this folder. |
 | API rules | `npm test` inside `infra/`. |
-| Simulator | Hands-on walk in Expo. Cognito, taps, and the live API stay manual. |
+| Simulator | `npm run record:simulator`. Maestro taps the booted simulator, asserts visible text, and saves an mp4. |
 
 ## Assignment outcomes
 
