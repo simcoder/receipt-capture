@@ -10,6 +10,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Issue 1 publishes the README, this decision log, and the Node harness from this folder's own git root. Domain code and `infra/` stay uncommitted until those issues are in review.
 - 2026-10-29: Code changes land through a pull request. A task that does not change this repo does not need one.
 - 2026-10-29: Issue 2 sets receipt dates to `MM-DD-YYYY` and stores amounts as integer minor units.
+- 2026-10-29: Issue 3 publishes the receipt state machine. Queue acceptance is `Queued`. `Confirmed` only follows `serverConfirm` or `userConfirm`.
 
 ## Accepted
 
