@@ -83,11 +83,6 @@ export function ReceiptCapture(props: {
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      {props.onBack ? (
-        <Pressable onPress={props.onBack}>
-          <Text style={styles.back}>Back to receipts</Text>
-        </Pressable>
-      ) : null}
       <Text style={styles.title}>Receipt capture</Text>
       <Text style={styles.label}>Company</Text>
       <Text>{props.companyId}</Text>
@@ -267,7 +262,6 @@ function MatchChoices(props: {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 24, gap: 8, paddingBottom: 48 },
-  back: { color: "#0f381f", fontWeight: "600", marginBottom: 8 },
   title: { fontSize: 28, fontWeight: "600", marginBottom: 8 },
   photo: { width: "100%", height: 180, borderRadius: 8, backgroundColor: "#eee" },
   section: { fontSize: 20, fontWeight: "600", marginTop: 16 },

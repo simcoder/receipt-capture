@@ -13,6 +13,7 @@ import { type CompanyReceipt } from "../receipts/receiptList";
 import { clearFake } from "../receipts/submitReceipt";
 import { AppMenu, type AppTab } from "./AppMenu";
 import { CaptureScreen } from "./CaptureScreen";
+import { CaptureSheet } from "./CaptureSheet";
 import { ReceiptCapture } from "./ReceiptCapture";
 import { HomeList } from "./HomeList";
 import { ProfileScreen } from "./ProfileScreen";
@@ -291,27 +292,6 @@ export default function SignInScreen() {
     }
   }
 
-  if (idToken && visit) {
-    return (
-      <SafeAreaView style={styles.screen} edges={["bottom"]}>
-        <ReceiptCapture
-          companyId={companyId}
-          queueError={queueError}
-          receipts={receipts}
-          onChange={setReceipts}
-          onQueue={(localId) => void queueAndSubmit(localId)}
-          onConfirm={(localId, transactionId) => void onConfirm(localId, transactionId)}
-          matchError={matchError}
-          onLogout={onLogout}
-          initialImageId={visit.imageId}
-          photoBase64={visit.photoBase64}
-          onBack={() => setVisit(null)}
-          onSubmit={submitVisit}
-        />
-      </SafeAreaView>
-    );
-  }
-
   if (idToken && !listReady) {
     return (
       <SafeAreaView style={styles.centered} edges={["bottom"]}>
@@ -346,6 +326,24 @@ export default function SignInScreen() {
           }}
           onProfile={() => setTab("profile")}
         />
+        {visit ? (
+          <CaptureSheet onDismiss={() => setVisit(null)}>
+            <ReceiptCapture
+              companyId={companyId}
+              queueError={queueError}
+              receipts={receipts}
+              onChange={setReceipts}
+              onQueue={(localId) => void queueAndSubmit(localId)}
+              onConfirm={(localId, transactionId) => void onConfirm(localId, transactionId)}
+              matchError={matchError}
+              onLogout={onLogout}
+              initialImageId={visit.imageId}
+              photoBase64={visit.photoBase64}
+              onBack={() => setVisit(null)}
+              onSubmit={submitVisit}
+            />
+          </CaptureSheet>
+        ) : null}
       </SafeAreaView>
     );
   }
