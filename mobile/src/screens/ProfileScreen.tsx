@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
   company: { fontSize: 22, fontWeight: "600" },
   logout: {
     marginTop: 24,
-    backgroundColor: "#1f3a2e",
+    backgroundColor: "#0f381f",
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useConnectivity } from "../providers/connectivity-provider";
+import { colors } from "../theme/colors";
 
 export function ConnectivityBanner() {
   const insets = useSafeAreaInsets();
@@ -14,7 +15,7 @@ export function ConnectivityBanner() {
 
 const styles = StyleSheet.create({
   banner: { paddingBottom: 8, alignItems: "center" },
-  online: { backgroundColor: "#1b7f3a" },
-  offline: { backgroundColor: "#9b2c2c" },
+  online: { backgroundColor: colors.primary },
+  offline: { backgroundColor: colors.destructive },
   label: { color: "#fff", fontWeight: "600" },
 });

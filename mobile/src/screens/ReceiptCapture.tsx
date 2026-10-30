@@ -252,7 +252,7 @@ function MatchChoices(props: {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 24, gap: 8, paddingBottom: 48 },
-  back: { color: "#1f3a2e", fontWeight: "600", marginBottom: 8 },
+  back: { color: "#0f381f", fontWeight: "600", marginBottom: 8 },
   title: { fontSize: 28, fontWeight: "600", marginBottom: 8 },
   photo: { width: "100%", height: 180, borderRadius: 8, backgroundColor: "#eee" },
   section: { fontSize: 20, fontWeight: "600", marginTop: 16 },
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     gap: 8,
   },
-  imageCardSelected: { borderColor: "#1f3a2e", borderWidth: 2 },
+  imageCardSelected: { borderColor: "#0f381f", borderWidth: 2 },
   swatch: { height: 72, borderRadius: 4, padding: 8, justifyContent: "center", gap: 6 },
   line: { height: 4, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.85)" },
   lineShort: { width: "60%" },
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   merchant: { fontSize: 16, fontWeight: "600" },
-  receiptId: { fontSize: 15, fontWeight: "600", color: "#1f3a2e" },
+  receiptId: { fontSize: 15, fontWeight: "600", color: "#0f381f" },
   rail: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
   status: {
     fontSize: 12,
@@ -302,10 +302,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     overflow: "hidden",
   },
-  statusCurrent: { backgroundColor: "#1f3a2e", borderColor: "#1f3a2e", color: "#fff" },
+  statusCurrent: { backgroundColor: "#0f381f", borderColor: "#0f381f", color: "#fff" },
   note: { color: "#555", fontSize: 12, marginTop: 4 },
   primary: {
-    backgroundColor: "#1f3a2e",
+    backgroundColor: "#0f381f",
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
   primaryText: { color: "#fff", fontWeight: "600" },
   secondary: {
     borderWidth: 1,
-    borderColor: "#1f3a2e",
+    borderColor: "#0f381f",
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",

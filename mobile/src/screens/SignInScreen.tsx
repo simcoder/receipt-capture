@@ -391,12 +391,12 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#f7f7f5" },
+  screen: { flex: 1, backgroundColor: "#f8f9f7" },
   centered: {
     flex: 1,
     justifyContent: "center",
     padding: 24,
-    backgroundColor: "#f7f7f5",
+    backgroundColor: "#f8f9f7",
   },
   title: { fontSize: 28, fontWeight: "600", marginBottom: 24 },
   block: { gap: 12 },
@@ -409,11 +409,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#fff",
   },
-  primary: { backgroundColor: "#1f3a2e", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
+  primary: { backgroundColor: "#0f381f", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
   primaryText: { color: "#fff", fontWeight: "600" },
   secondary: {
     borderWidth: 1,
-    borderColor: "#1f3a2e",
+    borderColor: "#0f381f",
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",

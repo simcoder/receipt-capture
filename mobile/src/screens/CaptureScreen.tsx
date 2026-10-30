@@ -12,7 +12,7 @@ export function CaptureScreen(props: {
       <Text style={styles.title}>Capture</Text>
       <Text style={styles.hint}>Camera opens when you tap Capture. Or choose a photo from your library below.</Text>
       <Pressable accessibilityLabel="Choose from library" style={styles.library} onPress={props.onUpload}>
-        <Ionicons name="images-outline" size={42} color="#9aa3ad" />
+        <Ionicons name="images-outline" size={42} color="#616b66" />
         <Text style={styles.libraryText}>Tap to choose from library</Text>
       </Pressable>
       {props.error ? <Text style={styles.error}>{props.error}</Text> : null}
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   fake: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#1f3a2e",
+    borderColor: "#0f381f",
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
