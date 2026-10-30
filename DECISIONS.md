@@ -16,6 +16,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Issue 6 publishes the Expo sign-in shell. Cognito `USER_PASSWORD_AUTH`, tokens in SecureStore, logout clears the local queue.
 - 2026-10-29: Issue 7 publishes the receipt form. It stores a draft with integer minor units, an `MM-DD-YYYY` date, and a chosen synthetic image. The screen shows every receipt state. Saving and queueing never mark `Confirmed`. When Cognito env is absent, the sign-in screen can open that form as `northwind` without calling Cognito.
 - 2026-10-29: Issue 8 publishes the offline queue. Receipt metadata and the offline flag are stored in AsyncStorage, per company. Tokens stay in SecureStore. Receipt image bytes are not stored. Logout clears that company's queue. Relaunch loads the same queue.
+- 2026-10-29: Issue 9 publishes the CDK stack in `infra/` and deploys `ReceiptCapturePoc` from that folder. The Lambda date copy is `MM-DD-YYYY`, matching the domain. Tear down with `npm run destroy` in `infra/`.
 
 ## Accepted
 
@@ -53,7 +54,7 @@ Sign-in is Amazon Cognito with `USER_PASSWORD_AUTH` (in-app password, not a host
 
 ### D9. Teardown is `cdk destroy`
 
-The only AWS stack is `ReceiptCapturePoc`, defined in `infra/`. DynamoDB and the user pool use `RemovalPolicy.DESTROY`. The S3 bucket uses `autoDeleteObjects` and `RemovalPolicy.DESTROY`. After the presentation, run the commands in `infra/CLEANUP.md` from that folder. The stack has not been deployed.
+The only AWS stack is `ReceiptCapturePoc`, defined in `infra/`. DynamoDB and the user pool use `RemovalPolicy.DESTROY`. The S3 bucket uses `autoDeleteObjects` and `RemovalPolicy.DESTROY`. Deploy with `npm run deploy` from that folder. After the presentation, run the commands in `infra/CLEANUP.md` from that folder.
 
 ### D10. Matching is exact money, then merchant similarity
 
