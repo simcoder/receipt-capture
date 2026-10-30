@@ -33,6 +33,12 @@ export function parseDateOnly(value) {
   return `${match[1]}-${match[2]}-${match[3]}`;
 }
 
+export const FAIL_UPLOAD_MERCHANT = "Fail Upload";
+
+export function isFailUpload(merchant) {
+  return normalizeMerchant(merchant) === normalizeMerchant(FAIL_UPLOAD_MERCHANT);
+}
+
 export function normalizeMerchant(value) {
   return String(value ?? "")
     .toLowerCase()
@@ -62,6 +68,12 @@ export const seedTransactions = [
     companyId: "northwind",
     merchant: "Blue Bottle",
     money: { amountMinor: 1850, currency: "USD" },
+  },
+  {
+    id: "txn-harbor",
+    companyId: "northwind",
+    merchant: "Harbor",
+    money: { amountMinor: 2400, currency: "USD" },
   },
   {
     id: "txn-parking",
@@ -99,17 +111,19 @@ export function candidateMatches(receipt, transactions, takenTransactionIds) {
 
 export function fakeProcessor(receipt, transactions, takenTransactionIds) {
   const matches = candidateMatches(receipt, transactions, takenTransactionIds);
+  const confidence = matches[0]?.similarity ?? 0;
   const strong = matches.find((match) => match.similarity >= 0.8);
-  if (!strong) return { kind: "needs_review" };
-  return { kind: "confirmed", transactionId: strong.transactionId };
+  if (!strong) return { kind: "needs_review", confidence };
+  return { kind: "confirmed", transactionId: strong.transactionId, confidence: strong.similarity };
 }
 
 export function applyProcessorResult(state, result) {
   if (state.userCorrected || state.status === "Confirmed") return state;
-  if (result.kind === "needs_review") return { ...state, status: "NeedsReview" };
+  if (result.kind === "needs_review") return { ...state, status: "NeedsReview", confidence: result.confidence };
   return {
     ...state,
     status: "Confirmed",
     matchedTransactionId: result.transactionId,
+    confidence: result.confidence,
   };
 }

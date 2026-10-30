@@ -90,7 +90,7 @@ npm run test:all
 
 `npm run test:all` runs the domain tests, the typecheck, and the API rule tests. It prints how many of those three commands passed and exits non-zero if one fails. Pull requests run the same command in GitHub Actions.
 
-The simulator walk is separate. With the app open from `npm run ios`, install [Maestro](https://maestro.dev) and run `npm run record:simulator`. That taps through the signed-in app, checks the screen, and writes an mp4 under `maestro/recordings/`. Send that file if a reviewer asks for the walk. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` and restart Expo when you want the recording to include City Parking.
+The simulator walk is separate. Install Maestro with `curl -Ls "https://get.maestro.mobile.dev" | bash` and a JDK with `brew install openjdk@21`. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` in `mobile/.env` and restart Expo. With the app open from `npm run ios`, run `npm run record:simulator`. That clears the receipt tables, then signs in as northwind and checks a 100% match (Blue Bottle at 18.50 USD), an 80% match (Harbor Grill at 24.00 USD), a NeedsReview match (City Parking at 22.00 USD, left unmatched), a failed upload with Retry, and a contoso sign-in that cannot see the northwind receipts. The video is an mp4 under `maestro/recordings/`. Commit that mp4 after the run. `npm run clear:receipts` clears the tables without recording.
 
 ## Run locally
 
@@ -141,6 +141,25 @@ Passwords, for when the stack is deployed:
 | `contoso.demo` | `Contoso-demo-1` | `contoso` |
 
 They are demo passwords, not personal secrets.
+
+## Seeded transactions
+
+The fake processor matches the merchant, amount, and currency you type against this list. The photo is stored and is not read. Run this from the repo root to print the same list the API uses:
+
+```bash
+npm run seeds
+```
+
+| Company | Transaction | Merchant | Amount |
+| --- | --- | --- | --- |
+| `northwind` | `txn-blue-bottle` | Blue Bottle | 18.50 USD |
+| `northwind` | `txn-harbor` | Harbor | 24.00 USD |
+| `northwind` | `txn-parking` | Airport Parking | 22.00 USD |
+| `contoso` | `txn-contoso-cafe` | Contoso Cafe | 9.75 USD |
+
+The amount and currency must match a seed for that company. The receipt list shows that score as a decimal and a percent, such as `0.80 (80%)`. A merchant score of 0.8 or higher comes back **Confirmed**. An equal name scores 1. A name that contains the other scores 0.8, so **Harbor Grill** at 24.00 USD confirms against Harbor. **Blue Bottle Coffee** at 18.50 USD also scores 0.8 against Blue Bottle while that transaction is still open. After Blue Bottle confirms, that transaction is taken, and a later Blue Bottle Coffee receipt at the same amount comes back **NeedsReview** at `0.00 (0%)`. A shared word below 0.8 comes back **NeedsReview**. **City Parking** at 22.00 USD shares "parking" with Airport Parking, so you confirm that seed or leave the receipt unmatched. A different amount, such as Northwind Cafe at 12.34 USD, comes back **NeedsReview** with nothing to pick. One transaction cannot take two receipts. The date and the notes do not change the result. The local fake uses this same list when the API cannot be reached.
+
+Merchant **Fail Upload** is not a transaction. The first submit stays on the form as **Failed**, with no score. A toast says **Upload failed. Try again.** **Retry** sends that same receipt through the processor. It then comes back **NeedsReview** at `0.00 (0%)`.
 
 ## AI tools
 

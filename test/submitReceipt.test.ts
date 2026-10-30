@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import type { KeyValueStore } from "../mobile/src/storage/localQueue.ts";
 import {
   SEED_TRANSACTIONS,
+  retryFailedReceipt,
   submitReceipt,
   submitRequest,
 } from "../mobile/src/receipts/submitReceipt.ts";
@@ -135,8 +136,31 @@ describe("submit receipt", () => {
     assert.equal(result.status, "NeedsReview");
     assert.deepEqual(
       SEED_TRANSACTIONS.map((transaction) => transaction.id),
-      ["txn-blue-bottle", "txn-parking", "txn-contoso-cafe"],
+      ["txn-blue-bottle", "txn-harbor", "txn-parking", "txn-contoso-cafe"],
     );
+  });
+
+  it("fails the first Fail Upload and processes that same receipt on retry", async () => {
+    const store = memoryStore();
+    const failed = await submitReceipt({
+      ...receipt,
+      store,
+      merchant: "Fail Upload",
+      amountMinor: 100,
+    });
+    assert.equal(failed.status, "Failed");
+    assert.equal(failed.confidence, undefined);
+    const retried = await retryFailedReceipt({
+      store,
+      companyId: "northwind",
+      receiptId: failed.receiptId,
+      apiUrl: "",
+      idToken: null,
+      offline: true,
+    });
+    assert.equal(retried.receiptId, failed.receiptId);
+    assert.equal(retried.status, "NeedsReview");
+    assert.equal(retried.confidence, 0);
   });
 
   it("surfaces an unauthorized response and does not store a local fake", async () => {

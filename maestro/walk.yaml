@@ -1,27 +1,79 @@
 appId: host.exp.Exponent
 ---
+# npm run record:simulator clears the receipt tables before this walk.
 - launchApp:
     stopApp: false
 - runFlow:
     when:
-      visible: "Sign in"
+      visible: "Pull down to dismiss"
     commands:
-      - tapOn: "Username"
-      - inputText: ${MAESTRO_USERNAME}
-      - tapOn: "Password"
-      - inputText: ${MAESTRO_PASSWORD}
-      - tapOn: "Sign in"
+      - swipe:
+          from:
+            id: "sheet-handle"
+          direction: DOWN
+          duration: 600
+- runFlow:
+    when:
+      visible: "Profile"
+    commands:
+      - tapOn: "Profile"
+      - tapOn: "Log out"
       - extendedWaitUntil:
-          visible: "Receipts"
-          timeout: 30000
+          visible: "Sign in"
+          timeout: 15000
 - runFlow:
-    when:
-      notVisible: "Tap to choose from library"
-    commands:
-      - tapOn: "Capture"
-- assertVisible: "Tap to choose from library"
-- assertNotVisible: "The camera could not be opened"
+    file: flows/sign-in.yaml
 - runFlow:
-    when:
-      visible: "Use a fake receipt"
-    file: review.yaml
+    file: flows/submit-receipt.yaml
+    env:
+      MERCHANT: "Blue Bottle"
+      AMOUNT: "18.50"
+      EXPECT: "1.00 (100%)"
+- assertVisible: "Confirmed"
+- runFlow:
+    file: flows/submit-receipt.yaml
+    env:
+      MERCHANT: "Harbor Grill"
+      AMOUNT: "24.00"
+      EXPECT: "0.80 (80%)"
+- assertVisible: "Confirmed"
+- runFlow:
+    file: flows/submit-receipt.yaml
+    env:
+      MERCHANT: "City Parking"
+      AMOUNT: "22.00"
+      EXPECT: "0.33 (33%)"
+- assertVisible: "NeedsReview"
+- tapOn: "City Parking"
+- assertVisible: "Review"
+- assertVisible: "Airport Parking · 22.00 USD"
+- swipe:
+    from:
+      id: "sheet-handle"
+    direction: DOWN
+    duration: 600
+- assertVisible: "NeedsReview"
+- runFlow:
+    file: flows/fail-upload.yaml
+- tapOn: "Profile"
+- tapOn: "Log out"
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 15000
+- runFlow:
+    file: flows/sign-in.yaml
+    env:
+      MAESTRO_USERNAME: "contoso.demo"
+      MAESTRO_PASSWORD: "Contoso-demo-1"
+- assertNotVisible: "Blue Bottle"
+- assertNotVisible: "Harbor Grill"
+- assertNotVisible: "City Parking"
+- assertNotVisible: "Fail Upload"
+- runFlow:
+    file: flows/submit-receipt.yaml
+    env:
+      MERCHANT: "Contoso Cafe"
+      AMOUNT: "9.75"
+      EXPECT: "1.00 (100%)"
+- assertVisible: "Contoso Cafe"
+- assertNotVisible: "Blue Bottle"

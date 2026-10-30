@@ -1,4 +1,9 @@
-import { applyProcessorResult, candidateMatches, type SeedTransaction } from "../../../src/domain/matching.ts";
+import {
+  applyProcessorResult,
+  fakeProcessor,
+  isFailUpload,
+  type SeedTransaction,
+} from "../../../src/domain/matching.ts";
 import { resolveSubmit } from "../../../src/domain/idempotency.ts";
 import type { ReceiptStatus } from "../../../src/domain/receiptState.ts";
 import { ApiTransportError, apiErrorMessage, apiRequest } from "../api/client.ts";
@@ -11,6 +16,12 @@ export const SEED_TRANSACTIONS: readonly SeedTransaction[] = [
     companyId: "northwind",
     merchant: "Blue Bottle",
     money: { amountMinor: 1850, currency: "USD" },
+  },
+  {
+    id: "txn-harbor",
+    companyId: "northwind",
+    merchant: "Harbor",
+    money: { amountMinor: 2400, currency: "USD" },
   },
   {
     id: "txn-parking",
@@ -32,6 +43,7 @@ export type SubmitResult = {
   replayed: boolean;
   source: "api" | "local-fake";
   matchedTransactionId?: string;
+  confidence?: number;
 };
 
 type StoredReceipt = {
@@ -44,6 +56,7 @@ type StoredReceipt = {
   status: ReceiptStatus;
   matchedTransactionId?: string;
   userCorrected?: boolean;
+  confidence?: number;
 };
 
 type FakeState = {
@@ -128,6 +141,79 @@ export async function clearFake(store: KeyValueStore, companyId: string): Promis
   await store.removeItem(fakeKey(companyId));
 }
 
+export async function retryFailedReceipt(input: {
+  store: KeyValueStore;
+  companyId: string;
+  receiptId: string;
+  apiUrl: string;
+  idToken: string | null;
+  offline: boolean;
+  fetchImpl?: typeof fetch;
+}): Promise<SubmitResult> {
+  const canCallApi = !input.offline && Boolean(input.apiUrl) && Boolean(input.idToken);
+  if (!canCallApi) return retryLocalFake(input.store, input.companyId, input.receiptId);
+
+  const result = await apiRequest({
+    apiUrl: input.apiUrl,
+    idToken: input.idToken,
+    path: `/receipts/${input.receiptId}/reprocess`,
+    method: "POST",
+    fetchImpl: input.fetchImpl,
+  });
+  if (result.status >= 500) throw new ApiTransportError();
+  if (!result.ok) throw new Error(apiErrorMessage(result.payload, "Retry failed"));
+  const payload = result.payload;
+  const receipt = payload && typeof payload === "object" && "receipt" in payload ? payload.receipt : null;
+  if (!receipt || typeof receipt !== "object" || !("status" in receipt) || typeof receipt.status !== "string") {
+    throw new Error("Retry failed");
+  }
+  const matchedTransactionId =
+    "matchedTransactionId" in receipt && typeof receipt.matchedTransactionId === "string"
+      ? receipt.matchedTransactionId
+      : undefined;
+  const confidence = "confidence" in receipt && typeof receipt.confidence === "number" ? receipt.confidence : undefined;
+  return {
+    receiptId: input.receiptId,
+    status: receipt.status as ReceiptStatus,
+    replayed: false,
+    source: "api",
+    ...(matchedTransactionId ? { matchedTransactionId } : {}),
+    ...(confidence !== undefined ? { confidence } : {}),
+  };
+}
+
+async function retryLocalFake(store: KeyValueStore, companyId: string, receiptId: string): Promise<SubmitResult> {
+  const state = await loadFake(store, companyId);
+  const current = state.receipts.find((receipt) => receipt.receiptId === receiptId);
+  if (!current || current.status !== "Failed") throw new Error("Retry failed");
+  const transactions = withTakenTransactions(SEED_TRANSACTIONS, state.receipts);
+  const decision = applyProcessorResult(
+    { status: "Processing", userCorrected: false },
+    processorResult(current, receiptId, transactions),
+  );
+  const stored: StoredReceipt = {
+    ...current,
+    status: decision.status,
+    ...(decision.matchedTransactionId ? { matchedTransactionId: decision.matchedTransactionId } : {}),
+    ...(typeof decision.confidence === "number" ? { confidence: decision.confidence } : {}),
+  };
+  await store.setItem(
+    fakeKey(companyId),
+    JSON.stringify({
+      ...state,
+      receipts: state.receipts.map((receipt) => (receipt.receiptId === receiptId ? stored : receipt)),
+    }),
+  );
+  return {
+    receiptId,
+    status: stored.status,
+    replayed: false,
+    source: "local-fake",
+    ...(stored.matchedTransactionId ? { matchedTransactionId: stored.matchedTransactionId } : {}),
+    ...(typeof stored.confidence === "number" ? { confidence: stored.confidence } : {}),
+  };
+}
+
 async function postReceipt(input: {
   apiUrl: string;
   idToken: string | null;
@@ -174,12 +260,14 @@ async function postReceipt(input: {
     "matchedTransactionId" in receipt && typeof receipt.matchedTransactionId === "string"
       ? receipt.matchedTransactionId
       : undefined;
+  const confidence = "confidence" in receipt && typeof receipt.confidence === "number" ? receipt.confidence : undefined;
   return {
     receiptId,
     status: status as ReceiptStatus,
     replayed,
     source: "api",
     ...(matchedTransactionId ? { matchedTransactionId } : {}),
+    ...(confidence !== undefined ? { confidence } : {}),
   };
 }
 
@@ -212,14 +300,17 @@ async function saveFake(
       replayed: true,
       source: "local-fake",
       ...(existing.matchedTransactionId ? { matchedTransactionId: existing.matchedTransactionId } : {}),
+      ...(typeof existing.confidence === "number" ? { confidence: existing.confidence } : {}),
     };
   }
 
   const transactions = withTakenTransactions(SEED_TRANSACTIONS, state.receipts);
-  const decision = applyProcessorResult(
-    { status: "Processing", userCorrected: false },
-    processorResult(input, resolution.receiptId, transactions),
-  );
+  const decision = isFailUpload(input.merchant)
+    ? { status: "Failed" as const, matchedTransactionId: undefined, confidence: undefined }
+    : applyProcessorResult(
+        { status: "Processing", userCorrected: false },
+        processorResult(input, resolution.receiptId, transactions),
+      );
   const stored: StoredReceipt = {
     receiptId: resolution.receiptId,
     companyId: input.companyId,
@@ -229,6 +320,7 @@ async function saveFake(
     date: input.date,
     status: decision.status,
     ...(decision.matchedTransactionId ? { matchedTransactionId: decision.matchedTransactionId } : {}),
+    ...(typeof decision.confidence === "number" ? { confidence: decision.confidence } : {}),
   };
   const next: FakeState = {
     records: resolution.records,
@@ -241,6 +333,7 @@ async function saveFake(
     replayed: false,
     source: "local-fake",
     ...(stored.matchedTransactionId ? { matchedTransactionId: stored.matchedTransactionId } : {}),
+    ...(typeof stored.confidence === "number" ? { confidence: stored.confidence } : {}),
   };
 }
 
@@ -249,7 +342,7 @@ function processorResult(
   receiptId: string,
   transactions: readonly SeedTransaction[],
 ) {
-  const matches = candidateMatches(
+  return fakeProcessor(
     {
       id: receiptId,
       companyId: input.companyId,
@@ -258,9 +351,6 @@ function processorResult(
     },
     transactions,
   );
-  const strong = matches.find((match) => match.similarity >= 0.8);
-  if (!strong) return { kind: "needs_review" as const };
-  return { kind: "confirmed" as const, transactionId: strong.transactionId };
 }
 
 function withTakenTransactions(

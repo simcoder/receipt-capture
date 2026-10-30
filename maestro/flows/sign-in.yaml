@@ -1,0 +1,20 @@
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      visible: "Sign in"
+    commands:
+      - tapOn: "Username"
+      - inputText: ${MAESTRO_USERNAME}
+      - tapOn: "Password"
+      - inputText: ${MAESTRO_PASSWORD}
+      - tapOn: "Receipt capture"
+      - tapOn: "Sign in"
+      - runFlow:
+          when:
+            visible: "Sign in"
+          commands:
+            - tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Receipts"
+    timeout: 30000
