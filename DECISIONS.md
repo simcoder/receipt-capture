@@ -13,6 +13,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Issue 3 publishes the receipt state machine. Queue acceptance is `Queued`. `Confirmed` only follows `serverConfirm` or `userConfirm`.
 - 2026-10-29: Issue 4 publishes idempotency and company switch. A lost success returns the same receipt. Logout clears the local queue.
 - 2026-10-29: Issue 5 publishes matching. Exact money, then merchant similarity. One transaction cannot take two receipts. A late processor result does not overwrite a user correction.
+- 2026-10-29: Issue 6 publishes the Expo sign-in shell. Cognito `USER_PASSWORD_AUTH`, tokens in SecureStore, logout clears the local queue.
 
 ## Accepted
 
@@ -22,7 +23,7 @@ The app lives entirely inside `receipt-capture/`. Nothing for this proof of conc
 
 ### D2. Expo is the client
 
-The reviewer-facing client will be Expo and TypeScript, mirroring the current Expo 57 stack (expo-router, expo-secure-store, expo-image-picker) without copying that app. A web simulation is not the primary target. The Expo shell is not written yet.
+The reviewer-facing client is Expo and TypeScript in `mobile/`, using expo-router and expo-secure-store. Sign-in is in-app `USER_PASSWORD_AUTH`. Tokens stay in SecureStore. Logout clears those tokens and the local queue. The receipt form and durable offline queue are later issues.
 
 ### D3. Money is integer minor units
 

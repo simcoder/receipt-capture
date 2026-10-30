@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Receipt Capture",
+    "slug": "receipt-capture",
+    "scheme": "receipt-capture",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
