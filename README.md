@@ -114,7 +114,7 @@ npm run seed:photos
 
 That folder already has cafe, fuel, and office. Add any other PNG or JPEG there and run `npm run seed:photos` again. The script sends every picture in the folder to the booted simulator.
 
-5. In the app, sign in. **Capture** opens the camera. **Tap to choose from library** opens the photo library, which now includes those receipts. **Use a fake receipt** opens the form with cafe, fuel, or office without using the library. **Profile** shows the company name and **Log out**.
+5. In the app, sign in. On a phone, **Capture** opens the camera. In the simulator there is no camera, so **Capture** stays on this screen and you use **Tap to choose from library**. That library now includes the seeded receipts. **Use a fake receipt** opens the form with cafe, fuel, or office without using the library. **Profile** shows the company name and **Log out**.
 
 The banner under the status bar is green while the Mac has a network and red when it does not. With the banner green, **Queue receipt** sends the receipt to the API. With the banner red, or when the API URL is missing, it uses the local fake. Turning the network back on does not send that receipt again. A lost success retries the same key and keeps the same receipt id.
 

@@ -256,7 +256,7 @@ export default function SignInScreen() {
     } catch (cameraError) {
       setTab("capture");
       setCaptureError(
-        cameraError instanceof Error ? cameraError.message : "This simulator has no camera. Use a fake receipt.",
+        cameraError instanceof Error ? cameraError.message : "The camera could not be opened.",
       );
     }
   }

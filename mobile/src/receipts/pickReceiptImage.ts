@@ -1,3 +1,4 @@
+import * as Device from "expo-device";
 import * as ImagePicker from "expo-image-picker";
 
 const pickerOptions = {
@@ -7,14 +8,16 @@ const pickerOptions = {
 };
 
 export async function takeReceiptPhoto(): Promise<string | null> {
+  // launchCameraAsync crashes the iOS Simulator. Leave the library screen in place.
+  if (!Device.isDevice) return null;
   const permission = await ImagePicker.requestCameraPermissionsAsync();
   if (!permission.granted) {
-    throw new Error("This simulator has no camera. Use a fake receipt.");
+    throw new Error("Camera permission is required.");
   }
   const result = await ImagePicker.launchCameraAsync(pickerOptions);
   if (result.canceled) return null;
   const photo = result.assets[0]?.base64;
-  if (!photo) throw new Error("This simulator has no camera. Use a fake receipt.");
+  if (!photo) throw new Error("That picture could not be read.");
   return photo;
 }
 
