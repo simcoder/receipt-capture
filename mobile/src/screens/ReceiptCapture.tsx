@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { dateFromStored, formatDateOnly, maskAmount } from "../receipts/captureFields";
 import { openMatches } from "../receipts/matchReceipt";
 import {
   captureDraft,
@@ -36,6 +38,7 @@ export function ReceiptCapture(props: {
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [date, setDate] = useState("");
+  const [dateOpen, setDateOpen] = useState(false);
   const [imageId, setImageId] = useState<ReceiptImageId | null>(props.initialImageId ?? null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -101,7 +104,7 @@ export function ReceiptCapture(props: {
       <Text style={styles.label}>Amount</Text>
       <TextInput
         keyboardType="decimal-pad"
-        onChangeText={setAmount}
+        onChangeText={(value) => setAmount(maskAmount(value))}
         placeholder="12.34"
         style={styles.input}
         value={amount}
@@ -116,13 +119,26 @@ export function ReceiptCapture(props: {
         value={currency}
       />
       <Text style={styles.label}>Date</Text>
-      <TextInput
-        autoCorrect={false}
-        onChangeText={setDate}
-        placeholder="MM-DD-YYYY"
-        style={styles.input}
-        value={date}
-      />
+      <Pressable accessibilityLabel="Choose date" style={styles.input} onPress={() => setDateOpen((open) => !open)}>
+        <Text style={date ? styles.dateValue : styles.placeholder}>{date || "MM-DD-YYYY"}</Text>
+      </Pressable>
+      {dateOpen ? (
+        <DateTimePicker
+          accentColor="#0f381f"
+          display={Platform.OS === "ios" ? "inline" : "default"}
+          mode="date"
+          themeVariant="light"
+          value={dateFromStored(date, new Date())}
+          onChange={(event, next) => {
+            if (event.type === "dismissed" || !next) {
+              setDateOpen(false);
+              return;
+            }
+            setDate(formatDateOnly(next));
+            if (Platform.OS !== "ios") setDateOpen(false);
+          }}
+        />
+      ) : null}
 
       <Text style={styles.label}>{props.photoBase64 ? "Photo" : "Synthetic image"}</Text>
       {props.photoBase64 ? (
@@ -274,6 +290,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#fff",
   },
+  dateValue: { color: "#171f1c" },
+  placeholder: { color: "#8e8e93" },
   images: { flexDirection: "row", gap: 8 },
   imageCard: {
     flex: 1,

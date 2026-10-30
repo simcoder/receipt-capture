@@ -14,7 +14,8 @@
           "cameraPermission": "Receipt capture uses the camera to photograph a receipt.",
           "photosPermission": "Receipt capture uses a photo you choose."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": false
