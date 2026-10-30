@@ -31,8 +31,12 @@ describe("infra receipt rules", () => {
       merchant: "City Parking",
       money: { amountMinor: 2200, currency: "USD" },
     };
-    assert.equal(fakeProcessor(coffee, seedTransactions, new Set()).kind, "confirmed");
-    assert.equal(fakeProcessor(parking, seedTransactions, new Set()).kind, "needs_review");
+    const confirmed = fakeProcessor(coffee, seedTransactions, new Set());
+    const review = fakeProcessor(parking, seedTransactions, new Set());
+    assert.equal(confirmed.kind, "confirmed");
+    assert.equal(confirmed.confidence, 0.8);
+    assert.equal(review.kind, "needs_review");
+    assert.equal(review.confidence, 1 / 3);
     assert.deepEqual(
       candidateMatches(coffee, seedTransactions, new Set()).map((match) => match.transactionId),
       ["txn-blue-bottle"],
@@ -48,6 +52,7 @@ describe("infra receipt rules", () => {
     const late = applyProcessorResult(corrected, {
       kind: "confirmed",
       transactionId: "txn-parking",
+      confidence: 1,
     });
     assert.equal(late.matchedTransactionId, "txn-blue-bottle");
   });

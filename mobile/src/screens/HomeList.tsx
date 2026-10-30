@@ -1,5 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { formatMoney } from "../receipts/receiptDraft";
+import { formatConfidence } from "../receipts/receiptList";
 import type { CompanyReceipt } from "../receipts/receiptList";
 
 export function HomeList(props: {
@@ -22,6 +23,9 @@ export function HomeList(props: {
             <Text>{formatMoney(receipt.amountMinor, receipt.currency)}</Text>
             <Text>{receipt.date}</Text>
             <Text style={styles.status}>{receipt.status}</Text>
+            {typeof receipt.confidence === "number" ? (
+              <Text>{formatConfidence(receipt.confidence)}</Text>
+            ) : null}
           </>
         );
         if (receipt.status !== "NeedsReview") {

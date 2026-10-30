@@ -3,6 +3,7 @@ import {
   applyUserCorrection,
   candidateMatches,
   confirmMatch,
+  fakeProcessor,
   type SeedTransaction,
 } from "../../../src/domain/matching.ts";
 import type { ReceiptStatus } from "../../../src/domain/receiptState.ts";
@@ -21,6 +22,7 @@ export type MatchResult = {
   status: ReceiptStatus;
   matchedTransactionId: string;
   userCorrected: true;
+  confidence?: number;
 };
 
 type MatchReceipt = {
@@ -48,6 +50,7 @@ type FakeReceipt = {
   status: ReceiptStatus;
   matchedTransactionId?: string;
   userCorrected?: boolean;
+  confidence?: number;
 };
 
 type FakeState = {
@@ -131,6 +134,7 @@ export async function applyLateProcessor(
       status: reviewStatus,
       userCorrected: current.userCorrected === true,
       ...(current.matchedTransactionId ? { matchedTransactionId: current.matchedTransactionId } : {}),
+      ...(typeof current.confidence === "number" ? { confidence: current.confidence } : {}),
     },
     processorResult(current, seedsWithTaken(state.receipts)),
   );
@@ -139,6 +143,7 @@ export async function applyLateProcessor(
     status: next.status,
     userCorrected: next.userCorrected,
     ...(next.matchedTransactionId ? { matchedTransactionId: next.matchedTransactionId } : {}),
+    ...(typeof next.confidence === "number" ? { confidence: next.confidence } : {}),
   };
   await writeFake(store, companyId, {
     ...state,
@@ -178,22 +183,28 @@ async function confirmLocally(
       matchedTransactionId: item.matchedTransactionId,
     })),
   ];
-  confirmMatch(
-    {
-      id: receipt.receiptId,
-      companyId: receipt.companyId,
-      merchant: receipt.merchant,
-      money: { amountMinor: receipt.amountMinor, currency: receipt.currency },
-    },
+  const receiptForMatch = {
+    id: receipt.receiptId,
+    companyId: receipt.companyId,
+    merchant: receipt.merchant,
+    money: { amountMinor: receipt.amountMinor, currency: receipt.currency },
+  };
+  const seeds = seedsWithTaken(known);
+  confirmMatch(receiptForMatch, transactionId, seeds);
+  const confidence = candidateMatches(receiptForMatch, seeds).find(
+    (match) => match.transactionId === transactionId,
+  )?.similarity;
+  const corrected = applyUserCorrection(
+    { status: "NeedsReview", userCorrected: false },
     transactionId,
-    seedsWithTaken(known),
+    confidence,
   );
-  const corrected = applyUserCorrection({ status: "NeedsReview", userCorrected: false }, transactionId);
-  await rememberMatch(store, receipt, corrected.matchedTransactionId ?? transactionId);
+  await rememberMatch(store, receipt, corrected.matchedTransactionId ?? transactionId, corrected.confidence);
   return {
     status: corrected.status,
     matchedTransactionId: corrected.matchedTransactionId ?? transactionId,
     userCorrected: true,
+    ...(typeof corrected.confidence === "number" ? { confidence: corrected.confidence } : {}),
   };
 }
 
@@ -220,12 +231,23 @@ async function postMatch(input: {
   if (!body || typeof body !== "object") throw new Error("Match failed");
   const status = "status" in body ? body.status : undefined;
   const matchedTransactionId = "matchedTransactionId" in body ? body.matchedTransactionId : undefined;
+  const confidence = "confidence" in body && typeof body.confidence === "number" ? body.confidence : undefined;
   if (status !== "Confirmed" || typeof matchedTransactionId !== "string") throw new Error("Match failed");
-  await rememberMatch(input.store, input.receipt, matchedTransactionId);
-  return { status, matchedTransactionId, userCorrected: true };
+  await rememberMatch(input.store, input.receipt, matchedTransactionId, confidence);
+  return {
+    status,
+    matchedTransactionId,
+    userCorrected: true,
+    ...(confidence !== undefined ? { confidence } : {}),
+  };
 }
 
-async function rememberMatch(store: KeyValueStore, receipt: MatchReceipt, transactionId: string): Promise<void> {
+async function rememberMatch(
+  store: KeyValueStore,
+  receipt: MatchReceipt,
+  transactionId: string,
+  confidence?: number,
+): Promise<void> {
   const state = await readFake(store, receipt.companyId);
   const stored: FakeReceipt = {
     receiptId: receipt.receiptId,
@@ -237,6 +259,7 @@ async function rememberMatch(store: KeyValueStore, receipt: MatchReceipt, transa
     status: "Confirmed",
     matchedTransactionId: transactionId,
     userCorrected: true,
+    ...(typeof confidence === "number" ? { confidence } : {}),
   };
   const receipts = state.receipts.some((item) => item.receiptId === receipt.receiptId)
     ? state.receipts.map((item) => (item.receiptId === receipt.receiptId ? { ...item, ...stored } : item))
@@ -245,7 +268,7 @@ async function rememberMatch(store: KeyValueStore, receipt: MatchReceipt, transa
 }
 
 function processorResult(receipt: MatchReceipt, transactions: readonly SeedTransaction[]) {
-  const matches = candidateMatches(
+  return fakeProcessor(
     {
       id: receipt.receiptId,
       companyId: receipt.companyId,
@@ -254,9 +277,6 @@ function processorResult(receipt: MatchReceipt, transactions: readonly SeedTrans
     },
     transactions,
   );
-  const strong = matches.find((match) => match.similarity >= 0.8);
-  if (!strong) return { kind: "needs_review" as const };
-  return { kind: "confirmed" as const, transactionId: strong.transactionId };
 }
 
 async function readFake(store: KeyValueStore, companyId: string): Promise<FakeState> {

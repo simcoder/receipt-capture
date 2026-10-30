@@ -76,6 +76,7 @@ function publicReceipt(item) {
     status: item.status,
     matchedTransactionId: item.matchedTransactionId ?? null,
     userCorrected: Boolean(item.userCorrected),
+    confidence: typeof item.confidence === "number" ? item.confidence : null,
     objectKey: item.objectKey ?? null,
   };
 }
@@ -156,6 +157,7 @@ async function createReceipt(companyId, event) {
     date,
     status: decision.status,
     matchedTransactionId: decision.matchedTransactionId,
+    confidence: decision.confidence ?? 0,
     userCorrected: false,
     objectKey,
   };
@@ -222,24 +224,25 @@ async function matchReceipt(companyId, receiptId, event) {
     merchant: current.Item.merchant,
     money: { amountMinor: current.Item.amountMinor, currency: current.Item.currency },
   };
-  const allowed = candidateMatches(
+  const chosen = candidateMatches(
     receipt,
     seedTransactions,
     takenTransactionIds(siblings, receiptId),
-  ).some((candidate) => candidate.transactionId === transactionId);
-  if (!allowed) return json(409, { error: "transaction is not an open match" });
+  ).find((candidate) => candidate.transactionId === transactionId);
+  if (!chosen) return json(409, { error: "transaction is not an open match" });
 
   await doc.send(
     new UpdateCommand({
       TableName: receiptsTable,
       Key: { companyId, receiptId },
       UpdateExpression:
-        "SET #status = :status, matchedTransactionId = :transactionId, userCorrected = :userCorrected",
+        "SET #status = :status, matchedTransactionId = :transactionId, userCorrected = :userCorrected, confidence = :confidence",
       ExpressionAttributeNames: { "#status": "status" },
       ExpressionAttributeValues: {
         ":status": "Confirmed",
         ":transactionId": transactionId,
         ":userCorrected": true,
+        ":confidence": chosen.similarity,
       },
     }),
   );
@@ -250,6 +253,7 @@ async function matchReceipt(companyId, receiptId, event) {
       status: "Confirmed",
       matchedTransactionId: transactionId,
       userCorrected: true,
+      confidence: chosen.similarity,
     }),
   });
 }
@@ -266,6 +270,7 @@ async function reprocess(companyId, receiptId) {
       status: current.Item.status,
       userCorrected: Boolean(current.Item.userCorrected),
       matchedTransactionId: current.Item.matchedTransactionId,
+      confidence: current.Item.confidence,
     },
     fakeProcessor(
       {
@@ -279,16 +284,22 @@ async function reprocess(companyId, receiptId) {
     ),
   );
 
-  if (next.status !== current.Item.status || next.matchedTransactionId !== current.Item.matchedTransactionId) {
+  if (
+    next.status !== current.Item.status ||
+    next.matchedTransactionId !== current.Item.matchedTransactionId ||
+    next.confidence !== current.Item.confidence
+  ) {
     await doc.send(
       new UpdateCommand({
         TableName: receiptsTable,
         Key: { companyId, receiptId },
-        UpdateExpression: "SET #status = :status, matchedTransactionId = :transactionId",
+        UpdateExpression:
+          "SET #status = :status, matchedTransactionId = :transactionId, confidence = :confidence",
         ExpressionAttributeNames: { "#status": "status" },
         ExpressionAttributeValues: {
           ":status": next.status,
           ":transactionId": next.matchedTransactionId ?? null,
+          ":confidence": next.confidence ?? 0,
         },
       }),
     );

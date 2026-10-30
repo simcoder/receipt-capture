@@ -180,6 +180,7 @@ export default function SignInScreen() {
           currency: receipt.currency,
           date: receipt.date,
           status: result.status,
+          ...(typeof result.confidence === "number" ? { confidence: result.confidence } : {}),
         },
         ...current.filter((row) => row.receiptId !== result.receiptId),
       ]);
@@ -250,6 +251,7 @@ export default function SignInScreen() {
         ...current,
         status: result.status,
         matchedTransactionId: result.matchedTransactionId,
+        ...(typeof result.confidence === "number" ? { confidence: result.confidence } : {}),
       };
       setApiReceipts((rows) => rows.map((row) => (row.receiptId === receiptId ? confirmed : row)));
       setReviewId(null);

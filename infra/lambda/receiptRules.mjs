@@ -99,17 +99,19 @@ export function candidateMatches(receipt, transactions, takenTransactionIds) {
 
 export function fakeProcessor(receipt, transactions, takenTransactionIds) {
   const matches = candidateMatches(receipt, transactions, takenTransactionIds);
+  const confidence = matches[0]?.similarity ?? 0;
   const strong = matches.find((match) => match.similarity >= 0.8);
-  if (!strong) return { kind: "needs_review" };
-  return { kind: "confirmed", transactionId: strong.transactionId };
+  if (!strong) return { kind: "needs_review", confidence };
+  return { kind: "confirmed", transactionId: strong.transactionId, confidence: strong.similarity };
 }
 
 export function applyProcessorResult(state, result) {
   if (state.userCorrected || state.status === "Confirmed") return state;
-  if (result.kind === "needs_review") return { ...state, status: "NeedsReview" };
+  if (result.kind === "needs_review") return { ...state, status: "NeedsReview", confidence: result.confidence };
   return {
     ...state,
     status: "Confirmed",
     matchedTransactionId: result.transactionId,
+    confidence: result.confidence,
   };
 }

@@ -1,4 +1,4 @@
-import { applyProcessorResult, candidateMatches, type SeedTransaction } from "../../../src/domain/matching.ts";
+import { applyProcessorResult, fakeProcessor, type SeedTransaction } from "../../../src/domain/matching.ts";
 import { resolveSubmit } from "../../../src/domain/idempotency.ts";
 import type { ReceiptStatus } from "../../../src/domain/receiptState.ts";
 import { ApiTransportError, apiErrorMessage, apiRequest } from "../api/client.ts";
@@ -32,6 +32,7 @@ export type SubmitResult = {
   replayed: boolean;
   source: "api" | "local-fake";
   matchedTransactionId?: string;
+  confidence?: number;
 };
 
 type StoredReceipt = {
@@ -44,6 +45,7 @@ type StoredReceipt = {
   status: ReceiptStatus;
   matchedTransactionId?: string;
   userCorrected?: boolean;
+  confidence?: number;
 };
 
 type FakeState = {
@@ -174,12 +176,14 @@ async function postReceipt(input: {
     "matchedTransactionId" in receipt && typeof receipt.matchedTransactionId === "string"
       ? receipt.matchedTransactionId
       : undefined;
+  const confidence = "confidence" in receipt && typeof receipt.confidence === "number" ? receipt.confidence : undefined;
   return {
     receiptId,
     status: status as ReceiptStatus,
     replayed,
     source: "api",
     ...(matchedTransactionId ? { matchedTransactionId } : {}),
+    ...(confidence !== undefined ? { confidence } : {}),
   };
 }
 
@@ -212,6 +216,7 @@ async function saveFake(
       replayed: true,
       source: "local-fake",
       ...(existing.matchedTransactionId ? { matchedTransactionId: existing.matchedTransactionId } : {}),
+      ...(typeof existing.confidence === "number" ? { confidence: existing.confidence } : {}),
     };
   }
 
@@ -229,6 +234,7 @@ async function saveFake(
     date: input.date,
     status: decision.status,
     ...(decision.matchedTransactionId ? { matchedTransactionId: decision.matchedTransactionId } : {}),
+    confidence: decision.confidence,
   };
   const next: FakeState = {
     records: resolution.records,
@@ -241,6 +247,7 @@ async function saveFake(
     replayed: false,
     source: "local-fake",
     ...(stored.matchedTransactionId ? { matchedTransactionId: stored.matchedTransactionId } : {}),
+    ...(typeof stored.confidence === "number" ? { confidence: stored.confidence } : {}),
   };
 }
 
@@ -249,7 +256,7 @@ function processorResult(
   receiptId: string,
   transactions: readonly SeedTransaction[],
 ) {
-  const matches = candidateMatches(
+  return fakeProcessor(
     {
       id: receiptId,
       companyId: input.companyId,
@@ -258,9 +265,6 @@ function processorResult(
     },
     transactions,
   );
-  const strong = matches.find((match) => match.similarity >= 0.8);
-  if (!strong) return { kind: "needs_review" as const };
-  return { kind: "confirmed" as const, transactionId: strong.transactionId };
 }
 
 function withTakenTransactions(

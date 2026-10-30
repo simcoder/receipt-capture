@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { DomainError } from "../src/domain/errors.ts";
-import { fetchCompanyReceipts } from "../mobile/src/receipts/receiptList.ts";
+import { fetchCompanyReceipts, formatConfidence } from "../mobile/src/receipts/receiptList.ts";
 
 const northwind = {
   receiptId: "receipt-1",
@@ -47,6 +47,20 @@ describe("company receipt list", () => {
         }),
     });
     assert.equal(receipts[0]?.matchedTransactionId, "txn-blue-bottle");
+  });
+
+  it("keeps the confidence score and formats it as a decimal and a percent", async () => {
+    const receipts = await fetchCompanyReceipts({
+      apiUrl: "https://example.test",
+      idToken: "id-token",
+      companyId: "northwind",
+      fetchImpl: async () =>
+        new Response(JSON.stringify({ receipts: [{ ...northwind, confidence: 0.8 }] }), { status: 200 }),
+    });
+    assert.equal(receipts[0]?.confidence, 0.8);
+    assert.equal(formatConfidence(0.8), "0.80 (80%)");
+    assert.equal(formatConfidence(1 / 3), "0.33 (33%)");
+    assert.equal(formatConfidence(0), "0.00 (0%)");
   });
 
   it("does not show another company's receipts", async () => {

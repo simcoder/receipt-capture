@@ -14,7 +14,13 @@ export type CompanyReceipt = {
   date: string;
   status: ReceiptStatus;
   matchedTransactionId?: string;
+  confidence?: number;
 };
+
+export function formatConfidence(confidence: number): string {
+  const percent = Math.round(confidence * 100);
+  return `${confidence.toFixed(2)} (${percent}%)`;
+}
 
 export async function fetchCompanyReceipts(input: {
   apiUrl: string;
@@ -66,7 +72,16 @@ function parseCompanyReceipt(value: unknown): CompanyReceipt {
     date,
     status: status as ReceiptStatus,
     ...matchedTransactionId(record.matchedTransactionId),
+    ...confidenceScore(record.confidence),
   };
+}
+
+function confidenceScore(value: unknown): { confidence: number } | Record<string, never> {
+  if (value == null) return {};
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1) {
+    throw new DomainError("confidence is invalid");
+  }
+  return { confidence: value };
 }
 
 function matchedTransactionId(value: unknown): { matchedTransactionId: string } | Record<string, never> {
