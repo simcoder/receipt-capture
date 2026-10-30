@@ -11,8 +11,11 @@ import { chooseReceiptPhoto, takeReceiptPhoto } from "../receipts/pickReceiptIma
 import { DEVICE_PHOTO_ID, queueDraft, type LocalReceipt, type ReceiptImageId } from "../receipts/receiptDraft";
 import { type CompanyReceipt } from "../receipts/receiptList";
 import { clearFake } from "../receipts/submitReceipt";
+import { AppMenu, type AppTab } from "./AppMenu";
+import { CaptureScreen } from "./CaptureScreen";
 import { ReceiptCapture } from "./ReceiptCapture";
 import { HomeList } from "./HomeList";
+import { ProfileScreen } from "./ProfileScreen";
 
 export default function SignInScreen() {
   const session = useSession();
@@ -32,6 +35,7 @@ export default function SignInScreen() {
   const [listReady, setListReady] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [visit, setVisit] = useState<{ imageId: ReceiptImageId; photoBase64?: string } | null>(null);
+  const [tab, setTab] = useState<AppTab>("home");
   const saveGeneration = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,6 +140,7 @@ export default function SignInScreen() {
     setListError(null);
     setCaptureError(null);
     setVisit(null);
+    setTab("home");
     setPreviewCompany(null);
     setUsername("");
   }
@@ -246,8 +251,10 @@ export default function SignInScreen() {
     try {
       const photo = await takeReceiptPhoto();
       if (!photo) return;
+      setTab("capture");
       setVisit({ imageId: DEVICE_PHOTO_ID, photoBase64: photo });
     } catch (cameraError) {
+      setTab("capture");
       setCaptureError(
         cameraError instanceof Error ? cameraError.message : "This simulator has no camera. Use a fake receipt.",
       );
@@ -259,6 +266,7 @@ export default function SignInScreen() {
     try {
       const photo = await chooseReceiptPhoto();
       if (!photo) return;
+      setTab("capture");
       setVisit({ imageId: DEVICE_PHOTO_ID, photoBase64: photo });
     } catch (libraryError) {
       setCaptureError(libraryError instanceof Error ? libraryError.message : "That picture could not be read.");
@@ -296,18 +304,28 @@ export default function SignInScreen() {
   if (idToken) {
     return (
       <SafeAreaView style={styles.screen} edges={["bottom"]}>
-        <HomeList
-          companyId={companyId}
-          receipts={apiReceipts}
-          error={listError}
-          captureError={captureError}
-          onLogout={onLogout}
-          onOpenCamera={() => void openCamera()}
-          onUpload={() => void uploadPicture()}
-          onFakeReceipt={(imageId) => {
-            setCaptureError(null);
-            setVisit({ imageId });
+        <View style={styles.screen}>
+          {tab === "home" ? <HomeList companyId={companyId} receipts={apiReceipts} error={listError} /> : null}
+          {tab === "capture" ? (
+            <CaptureScreen
+              error={captureError}
+              onUpload={() => void uploadPicture()}
+              onFakeReceipt={(imageId) => {
+                setCaptureError(null);
+                setVisit({ imageId });
+              }}
+            />
+          ) : null}
+          {tab === "profile" ? <ProfileScreen companyId={companyId} onLogout={onLogout} /> : null}
+        </View>
+        <AppMenu
+          tab={tab}
+          onHome={() => setTab("home")}
+          onCapture={() => {
+            setTab("capture");
+            void openCamera();
           }}
+          onProfile={() => setTab("profile")}
         />
       </SafeAreaView>
     );

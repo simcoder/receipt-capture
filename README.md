@@ -74,7 +74,7 @@ Started 2026-10-29. Spec 001, the plan that shipped, is [.spec/001-initial-poc.m
 | Spec 002 | [.spec/002-ux.md](.spec/002-ux.md). Issues 26–30. |
 | Home list | Issue 26. After sign-in, the screen lists that company's receipts from `GET /receipts`, with merchant, amount, date, and status. |
 | Connectivity banner | Issue 27. The Offline switch is gone. The banner is green online and red offline. A returning network does not submit. |
-| Capture entry | Issue 28. A round camera button, upload from the library, or **Use a fake receipt** opens the same form. A photo stays in memory and is sent only when online and under 500 KB. |
+| Capture entry | Issue 28. Home, a green Capture button, and Profile sit on a bottom menu. Capture opens the camera or the photo library. Profile shows the company and Log out. A photo stays in memory and is sent only when online and under 500 KB. |
 
 ## Run the tests
 
@@ -95,7 +95,7 @@ npm install
 npx expo start --ios
 ```
 
-`--ios` opens the installed iOS Simulator. The banner under the status bar is green while the Mac has a network and red when it does not. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito. Save a draft and queue it. With the banner green, queue sends the receipt to the API. With the banner red, queue uses the local fake. Turning the network back on does not send that receipt again. Stop Expo, start it again, and choose the same preview. The queue comes back. Log out clears that company's queue.
+`--ios` opens the installed iOS Simulator. With that simulator running, `sh scripts/seed-simulator-photos.sh` from `mobile/` puts the cafe, fuel, and office pictures into its photo library so **Tap to choose from library** can use them. The banner under the status bar is green while the Mac has a network and red when it does not. Log out is on Profile. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito. Save a draft and queue it. With the banner green, queue sends the receipt to the API. With the banner red, queue uses the local fake. Turning the network back on does not send that receipt again. Stop Expo, start it again, and choose the same preview. The queue comes back. Log out clears that company's queue.
 
 Put the region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`. With no API URL, or when the API cannot be reached, **Queue receipt** uses the local fake. A lost success retries that same key and keeps the same receipt id.
 

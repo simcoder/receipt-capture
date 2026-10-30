@@ -23,7 +23,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Spec 002 in `.spec/002-ux.md` is the UX plan. The screens change. The rules from spec 001 do not.
 - 2026-10-30: Issue 26 makes the signed-in screen the company receipt list from `GET /receipts`. Logout still clears the device queue. The next sign-in loads that company's receipts again.
 - 2026-10-30: Issue 27 removes the Offline switch. A banner under the status bar is red when the device has no network and green when it does. Offline still uses the local fake. Online still uses the API with the same idempotency key. A returning network does not submit.
-- 2026-10-30: Issue 28 opens the capture form from the camera, the photo library, or a fake receipt. The photo stays in memory for that visit. It is sent only when online and under the 500 KB quarantine limit. The list and the device queue do not store image bytes. Fake receipts keep the cafe, fuel, and office image ids.
+- 2026-10-30: Issue 28 opens the capture form from the camera, the photo library, or a fake receipt. The photo stays in memory for that visit. It is sent only when online and under the 500 KB quarantine limit. The list and the device queue do not store image bytes. Fake receipts keep the cafe, fuel, and office image ids. The signed-in shell is a bottom menu: Home, a green Capture button, and Profile. Profile shows the company and Log out. Cafe, fuel, and office pictures can be added to the simulator photo library with `mobile/scripts/seed-simulator-photos.sh`.
 
 ## Accepted
 
