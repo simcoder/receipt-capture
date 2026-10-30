@@ -24,7 +24,8 @@ Started 2026-10-29. Spec 001, the plan that shipped, is [.spec/001-initial-poc.m
 | Match correction | Issue 11. A NeedsReview receipt lists open transactions. Confirm match sets Confirmed from that choice. One transaction cannot take two receipts. A later processor result leaves the correction in place. |
 | AWS stack | Issue 9. `ReceiptCapturePoc` in `infra/`. Deploy and destroy from that folder. Cleanup is `infra/CLEANUP.md`. |
 | Spec 001 | Complete. Archived in [.spec/001-initial-poc.md](.spec/001-initial-poc.md). |
-| Spec 002 | Written, not built. [.spec/002-ux.md](.spec/002-ux.md). Issues 26–30. |
+| Spec 002 | [.spec/002-ux.md](.spec/002-ux.md). Issues 26–30. |
+| Home list | Issue 26. After sign-in, the screen lists that company's receipts from `GET /receipts`, with merchant, amount, date, and status. |
 
 ## Run the tests
 

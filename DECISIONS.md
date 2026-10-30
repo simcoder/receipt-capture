@@ -21,6 +21,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Issue 11 adds the match choices on a NeedsReview receipt. The user confirms one open transaction. A second receipt cannot take it. A later processor result leaves that correction in place.
 - 2026-10-30: Spec 001 in `.spec/001-initial-poc.md` is the completed plan, issues 1–11. The demo script, AI usage notes, and recording are not part of that spec.
 - 2026-10-30: Spec 002 in `.spec/002-ux.md` is the UX plan. The screens change. The rules from spec 001 do not.
+- 2026-10-30: Issue 26 makes the signed-in screen the company receipt list from `GET /receipts`. Logout still clears the device queue. The next sign-in loads that company's receipts again.
 
 ## Accepted
 

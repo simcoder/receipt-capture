@@ -20,7 +20,9 @@ import { deviceStore } from "../src/deviceStore";
 import { clearCompanyQueue, loadLocalSession, saveOffline, saveQueue } from "../src/localQueue";
 import { queueDraft, type LocalReceipt } from "../src/receiptDraft";
 import { ReceiptCapture } from "../src/ReceiptCapture";
+import { HomeList } from "../src/HomeList";
 import { confirmReceiptMatch } from "../src/matchReceipt";
+import { fetchCompanyReceipts, type CompanyReceipt } from "../src/receiptList";
 import { clearFake, submitReceipt } from "../src/submitReceipt";
 
 const region = process.env.EXPO_PUBLIC_COGNITO_REGION ?? "";
@@ -38,6 +40,9 @@ export default function SignInScreen() {
   const [canPersist, setCanPersist] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [matchError, setMatchError] = useState<string | null>(null);
+  const [apiReceipts, setApiReceipts] = useState<CompanyReceipt[]>([]);
+  const [listError, setListError] = useState<string | null>(null);
+  const [listReady, setListReady] = useState(false);
   const saveGeneration = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
@@ -75,10 +80,42 @@ export default function SignInScreen() {
   }
 
   const showCapture = Boolean(idToken) || Boolean(previewCompany);
+  const previewing = Boolean(previewCompany) && !idToken;
   const companyId = idToken ? (companyIdFromIdToken(idToken) ?? "") : (previewCompany ?? "");
 
   useEffect(() => {
-    if (!showCapture || !companyId) {
+    if (!idToken) {
+      setListReady(false);
+      return;
+    }
+    if (!companyId) {
+      setApiReceipts([]);
+      setListError("missing company claim");
+      setListReady(true);
+      return;
+    }
+    let cancelled = false;
+    setListReady(false);
+    fetchCompanyReceipts({ apiUrl, idToken, companyId })
+      .then((rows) => {
+        if (cancelled) return;
+        setApiReceipts(rows);
+        setListError(null);
+        setListReady(true);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) return;
+        setApiReceipts([]);
+        setListError(loadError instanceof Error ? loadError.message : "Could not load receipts");
+        setListReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [idToken, companyId]);
+
+  useEffect(() => {
+    if (!previewing || !companyId) {
       setQueueReady(false);
       return;
     }
@@ -104,7 +141,7 @@ export default function SignInScreen() {
     return () => {
       cancelled = true;
     };
-  }, [showCapture, companyId]);
+  }, [previewing, companyId]);
 
   useEffect(() => {
     if (!canPersist || !companyId) return;
@@ -134,6 +171,8 @@ export default function SignInScreen() {
     }
     await Promise.all(cleared.deleteKeys.map((key) => SecureStore.deleteItemAsync(key)));
     setReceipts(cleared.queue);
+    setApiReceipts([]);
+    setListError(null);
     setIdToken(null);
     setPreviewCompany(null);
     setUsername("");
@@ -223,6 +262,23 @@ export default function SignInScreen() {
       <View style={styles.centered}>
         <ActivityIndicator />
       </View>
+    );
+  }
+
+  if (idToken && !listReady) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator />
+      </SafeAreaView>
+    );
+  }
+
+  if (idToken) {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
+        <StatusBar style="dark" />
+        <HomeList companyId={companyId} receipts={apiReceipts} error={listError} onLogout={onLogout} />
+      </SafeAreaView>
     );
   }
 
