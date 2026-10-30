@@ -101,6 +101,17 @@ describe("offline queue", () => {
     assert.equal(store.values.has(OFFLINE_KEY), true);
   });
 
+  it("keeps a photo visit as an image id and does not store the bytes", async () => {
+    const store = memoryStore();
+    const photo = draft({ imageId: "device-photo" });
+    await saveQueue(store, "northwind", [photo]);
+    const raw = store.values.get(queueKey("northwind")) ?? "";
+    assert.equal(raw.includes("imageBase64"), false);
+    assert.equal(raw.includes("device-photo"), true);
+    const reloaded = await loadLocalSession(store, "northwind");
+    assert.equal(reloaded.receipts[0]?.imageId, "device-photo");
+  });
+
   it("rejects image bytes and tokens if they were written into the queue", async () => {
     const store = memoryStore();
     await store.setItem(

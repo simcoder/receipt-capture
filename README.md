@@ -40,7 +40,7 @@ flowchart LR
 
 | Layer | What it uses |
 | --- | --- |
-| Client | Expo 57, expo-router, React 19, React Native 0.86, TypeScript 5.8 |
+| Client | Expo 57, expo-router, expo-image-picker, React 19, React Native 0.86, TypeScript 5.8 |
 | Sign-in | Cognito user pool, `USER_PASSWORD_AUTH`, no hosted UI. `custom:company_id` on the user. Tokens in expo-secure-store. |
 | Device copy | AsyncStorage for receipt metadata. A banner is green when the device has a network and red when it does not. Image bytes and tokens are not stored there. |
 | Domain | TypeScript in `src/domain/`. Node 22 tests. Money is integer minor units. Dates are `MM-DD-YYYY`. |
@@ -74,6 +74,7 @@ Started 2026-10-29. Spec 001, the plan that shipped, is [.spec/001-initial-poc.m
 | Spec 002 | [.spec/002-ux.md](.spec/002-ux.md). Issues 26–30. |
 | Home list | Issue 26. After sign-in, the screen lists that company's receipts from `GET /receipts`, with merchant, amount, date, and status. |
 | Connectivity banner | Issue 27. The Offline switch is gone. The banner is green online and red offline. A returning network does not submit. |
+| Capture entry | Issue 28. Home, a green Capture button, and Profile sit on a bottom menu. Capture opens the camera or the photo library. Profile shows the company and Log out. A photo stays in memory and is sent only when online and under 500 KB. |
 
 ## Run the tests
 
@@ -85,18 +86,39 @@ npm test
 npm run typecheck
 ```
 
-The app is in `mobile/`:
+## Run locally
+
+Needs a Mac with Xcode and the iOS Simulator. Commands below are from this folder after you clone the repo.
+
+1. Install the app and copy the env file.
 
 ```bash
-cd mobile
-cp env.example .env
 npm install
-npx expo start --ios
+npm --prefix mobile install
+cp mobile/env.example mobile/.env
 ```
 
-`--ios` opens the installed iOS Simulator. The banner under the status bar is green while the Mac has a network and red when it does not. Until `.env` has Cognito values, choose **Preview form as northwind**. That preview does not call Cognito. Save a draft and queue it. With the banner green, queue sends the receipt to the API. With the banner red, queue uses the local fake. Turning the network back on does not send that receipt again. Stop Expo, start it again, and choose the same preview. The queue comes back. Log out clears that company's queue.
+2. Put the Cognito region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack into `mobile/.env`. Usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`. If those values are empty, the sign-in screen offers **Preview form as northwind** and does not call Cognito.
 
-Put the region, user pool id, app client id, and API URL from the `ReceiptCapturePoc` stack outputs into `.env`. Seeded usernames and passwords are in [infra/README.md](infra/README.md). Deploy and tear down from `receipt-capture/infra`. With no API URL, or when the API cannot be reached, **Queue receipt** uses the local fake. A lost success retries that same key and keeps the same receipt id.
+3. Start Expo and open the simulator.
+
+```bash
+npm run ios
+```
+
+4. In a second terminal, with that simulator still open, load the pictures from `mobile/assets/fake-receipts/` into the simulator photo library.
+
+```bash
+npm run seed:photos
+```
+
+That folder already has cafe, fuel, and office. Add any other PNG or JPEG there and run `npm run seed:photos` again. The script sends every picture in the folder to the booted simulator.
+
+5. In the app, sign in. On a phone, **Capture** opens the camera. In the simulator there is no camera, so **Capture** stays on this screen and you use **Tap to choose from library**. That library now includes the seeded receipts. **Profile** shows the company name and **Log out**.
+
+If seeding fails, set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` in `mobile/.env` and restart Expo. **Capture** then shows **Use a fake receipt** for cafe, fuel, and office. Leave that variable unset and those buttons stay hidden.
+
+The banner under the status bar is green while the Mac has a network and red when it does not. With the banner green, **Queue receipt** sends the receipt to the API. With the banner red, or when the API URL is missing, it uses the local fake. Turning the network back on does not send that receipt again. A lost success retries the same key and keeps the same receipt id.
 
 ## Companies
 

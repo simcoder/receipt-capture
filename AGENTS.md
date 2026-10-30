@@ -37,7 +37,7 @@ const rows = await api.getReceipts(companyId);
 
 `apiRequest` returns `{ ok, status, payload }`. A thrown `fetch` becomes `ApiTransportError`. An HTTP error is returned, not thrown. The caller treats status 500 and above as a transport failure and shows a 4xx message. The bearer token is the ID token.
 
-Do not add React Query. Do not add an offline switch. The banner follows the device network. A returning network does not submit a receipt.
+Do not add React Query. Do not add an offline switch. Cafe, fuel, and office stay hidden unless `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS` is `1`. The banner follows the device network. A returning network does not submit a receipt. A receipt photo stays in memory for that visit. Do not write image bytes to AsyncStorage. `submitReceipt` sends `imageBase64` only when online and the image is under 500 KB.
 
 ## Names and packages
 

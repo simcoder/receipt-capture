@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "test": "node --experimental-strip-types --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ios": "npm run ios --prefix mobile",
+    "seed:photos": "npm run seed:photos --prefix mobile"
   },
   "engines": {
     "node": ">=22.18"

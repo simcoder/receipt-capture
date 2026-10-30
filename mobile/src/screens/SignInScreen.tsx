@@ -7,11 +7,16 @@ import { useConnectivity } from "../providers/connectivity-provider";
 import { useSession } from "../providers/session-provider";
 import { clearCompanyQueue, loadLocalSession, saveQueue } from "../storage/localQueue";
 import { deviceStore } from "../storage/deviceStore";
-import { queueDraft, type LocalReceipt } from "../receipts/receiptDraft";
+import { chooseReceiptPhoto, takeReceiptPhoto } from "../receipts/pickReceiptImage";
+import { DEVICE_PHOTO_ID, queueDraft, type LocalReceipt, type ReceiptImageId } from "../receipts/receiptDraft";
 import { type CompanyReceipt } from "../receipts/receiptList";
 import { clearFake } from "../receipts/submitReceipt";
+import { AppMenu, type AppTab } from "./AppMenu";
+import { CaptureScreen } from "./CaptureScreen";
+import { CaptureSheet } from "./CaptureSheet";
 import { ReceiptCapture } from "./ReceiptCapture";
 import { HomeList } from "./HomeList";
+import { ProfileScreen } from "./ProfileScreen";
 
 export default function SignInScreen() {
   const session = useSession();
@@ -29,6 +34,9 @@ export default function SignInScreen() {
   const [apiReceipts, setApiReceipts] = useState<CompanyReceipt[]>([]);
   const [listError, setListError] = useState<string | null>(null);
   const [listReady, setListReady] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  const [visit, setVisit] = useState<{ imageId: ReceiptImageId; photoBase64?: string } | null>(null);
+  const [tab, setTab] = useState<AppTab>("home");
   const saveGeneration = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,6 +139,9 @@ export default function SignInScreen() {
     setReceipts(cleared.queue);
     setApiReceipts([]);
     setListError(null);
+    setCaptureError(null);
+    setVisit(null);
+    setTab("home");
     setPreviewCompany(null);
     setUsername("");
   }
@@ -150,7 +161,25 @@ export default function SignInScreen() {
       date: receipt.date,
       idempotencyKey,
       offline,
+      imageBase64: visit?.photoBase64,
     });
+    if (result.source === "api" && companyId) {
+      const rows = await api.getReceipts(companyId).catch(() => null);
+      if (rows) setApiReceipts(rows);
+    } else {
+      setApiReceipts((current) => [
+        {
+          receiptId: result.receiptId,
+          companyId: receipt.companyId,
+          merchant: receipt.merchant,
+          amountMinor: receipt.amountMinor,
+          currency: receipt.currency,
+          date: receipt.date,
+          status: result.status,
+        },
+        ...current.filter((row) => row.receiptId !== result.receiptId),
+      ]);
+    }
     replaceReceipt({
       ...receipt,
       idempotencyKey,
@@ -160,6 +189,24 @@ export default function SignInScreen() {
       submitSource: result.source,
       ...(result.matchedTransactionId ? { matchedTransactionId: result.matchedTransactionId } : {}),
     });
+  }
+
+  async function submitVisit(draft: LocalReceipt) {
+    setQueueError(null);
+    const queued = {
+      ...queueDraft(draft),
+      idempotencyKey: draft.idempotencyKey ?? `local-${draft.localId}`,
+    };
+    setReceipts((current) => [...current, queued]);
+    try {
+      await send(queued);
+    } catch (submitError) {
+      const message = submitError instanceof Error ? submitError.message : "Could not submit the receipt";
+      setQueueError(message);
+      throw new Error(message);
+    }
+    setVisit(null);
+    setTab("home");
   }
 
   async function queueAndSubmit(localId: string) {
@@ -218,6 +265,33 @@ export default function SignInScreen() {
     );
   }
 
+  async function openCamera() {
+    setCaptureError(null);
+    try {
+      const photo = await takeReceiptPhoto();
+      if (!photo) return;
+      setTab("capture");
+      setVisit({ imageId: DEVICE_PHOTO_ID, photoBase64: photo });
+    } catch (cameraError) {
+      setTab("capture");
+      setCaptureError(
+        cameraError instanceof Error ? cameraError.message : "The camera could not be opened.",
+      );
+    }
+  }
+
+  async function uploadPicture() {
+    setCaptureError(null);
+    try {
+      const photo = await chooseReceiptPhoto();
+      if (!photo) return;
+      setTab("capture");
+      setVisit({ imageId: DEVICE_PHOTO_ID, photoBase64: photo });
+    } catch (libraryError) {
+      setCaptureError(libraryError instanceof Error ? libraryError.message : "That picture could not be read.");
+    }
+  }
+
   if (idToken && !listReady) {
     return (
       <SafeAreaView style={styles.centered} edges={["bottom"]}>
@@ -229,7 +303,47 @@ export default function SignInScreen() {
   if (idToken) {
     return (
       <SafeAreaView style={styles.screen} edges={["bottom"]}>
-        <HomeList companyId={companyId} receipts={apiReceipts} error={listError} onLogout={onLogout} />
+        <View style={styles.screen}>
+          {tab === "home" ? <HomeList companyId={companyId} receipts={apiReceipts} error={listError} /> : null}
+          {tab === "capture" ? (
+            <CaptureScreen
+              error={captureError}
+              onUpload={() => void uploadPicture()}
+              onFakeReceipt={(imageId) => {
+                setCaptureError(null);
+                setVisit({ imageId });
+              }}
+            />
+          ) : null}
+          {tab === "profile" ? <ProfileScreen companyId={companyId} onLogout={onLogout} /> : null}
+        </View>
+        <AppMenu
+          tab={tab}
+          onHome={() => setTab("home")}
+          onCapture={() => {
+            setTab("capture");
+            void openCamera();
+          }}
+          onProfile={() => setTab("profile")}
+        />
+        {visit ? (
+          <CaptureSheet onDismiss={() => setVisit(null)}>
+            <ReceiptCapture
+              companyId={companyId}
+              queueError={queueError}
+              receipts={receipts}
+              onChange={setReceipts}
+              onQueue={(localId) => void queueAndSubmit(localId)}
+              onConfirm={(localId, transactionId) => void onConfirm(localId, transactionId)}
+              matchError={matchError}
+              onLogout={onLogout}
+              initialImageId={visit.imageId}
+              photoBase64={visit.photoBase64}
+              onBack={() => setVisit(null)}
+              onSubmit={submitVisit}
+            />
+          </CaptureSheet>
+        ) : null}
       </SafeAreaView>
     );
   }
@@ -294,12 +408,12 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#f7f7f5" },
+  screen: { flex: 1, backgroundColor: "#f8f9f7" },
   centered: {
     flex: 1,
     justifyContent: "center",
     padding: 24,
-    backgroundColor: "#f7f7f5",
+    backgroundColor: "#f8f9f7",
   },
   title: { fontSize: 28, fontWeight: "600", marginBottom: 24 },
   block: { gap: 12 },
@@ -312,11 +426,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "#fff",
   },
-  primary: { backgroundColor: "#1f3a2e", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
+  primary: { backgroundColor: "#0f381f", borderRadius: 8, paddingVertical: 12, alignItems: "center" },
   primaryText: { color: "#fff", fontWeight: "600" },
   secondary: {
     borderWidth: 1,
-    borderColor: "#1f3a2e",
+    borderColor: "#0f381f",
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",

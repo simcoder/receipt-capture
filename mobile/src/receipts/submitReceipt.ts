@@ -2,6 +2,7 @@ import { applyProcessorResult, candidateMatches, type SeedTransaction } from "..
 import { resolveSubmit } from "../../../src/domain/idempotency.ts";
 import type { ReceiptStatus } from "../../../src/domain/receiptState.ts";
 import { ApiTransportError, apiErrorMessage, apiRequest } from "../api/client.ts";
+import { quarantineImage } from "./quarantineImage.ts";
 import type { KeyValueStore } from "../storage/localQueue.ts";
 
 export const SEED_TRANSACTIONS: readonly SeedTransaction[] = [
@@ -100,6 +101,7 @@ export async function submitReceipt(input: {
   idToken: string | null;
   apiUrl: string;
   offline: boolean;
+  imageBase64?: string;
   fetchImpl?: typeof fetch;
 }): Promise<SubmitResult> {
   const canCallApi = !input.offline && Boolean(input.apiUrl) && Boolean(input.idToken);
@@ -107,12 +109,14 @@ export async function submitReceipt(input: {
     return saveFake(input.store, input);
   }
 
+  const imageBase64 = input.imageBase64 ? quarantineImage(input.imageBase64) : undefined;
+  const request = { ...input, imageBase64 };
   try {
-    return await postReceipt(input);
+    return await postReceipt(request);
   } catch (firstError) {
     if (!isTransportFailure(firstError)) throw firstError;
     try {
-      return await postReceipt(input);
+      return await postReceipt(request);
     } catch (secondError) {
       if (!isTransportFailure(secondError)) throw secondError;
       return saveFake(input.store, input);
@@ -132,6 +136,7 @@ async function postReceipt(input: {
   amountMinor: number;
   currency: string;
   date: string;
+  imageBase64?: string;
   fetchImpl?: typeof fetch;
 }): Promise<SubmitResult> {
   const result = await apiRequest({
@@ -145,6 +150,7 @@ async function postReceipt(input: {
       amount: amountDecimal(input.amountMinor),
       currency: input.currency,
       date: input.date,
+      ...(input.imageBase64 ? { imageBase64: input.imageBase64 } : {}),
     },
     fetchImpl: input.fetchImpl,
   });

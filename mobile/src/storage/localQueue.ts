@@ -1,7 +1,7 @@
 import { DomainError } from "../../../src/domain/errors.ts";
 import { parseDateOnly } from "../../../src/domain/dateOnly.ts";
 import { RECEIPT_STATUSES, type ReceiptStatus } from "../../../src/domain/receiptState.ts";
-import { SYNTHETIC_IMAGES, type LocalReceipt, type SyntheticImageId } from "../receipts/receiptDraft.ts";
+import { DEVICE_PHOTO_ID, SYNTHETIC_IMAGES, type LocalReceipt, type ReceiptImageId } from "../receipts/receiptDraft.ts";
 
 export const OFFLINE_KEY = "receipt-capture.offline";
 
@@ -16,7 +16,7 @@ const METADATA_KEYS = [
   "status",
 ] as const;
 
-const IMAGE_IDS = new Set<string>(SYNTHETIC_IMAGES.map((image) => image.id));
+const IMAGE_IDS = new Set<string>([...SYNTHETIC_IMAGES.map((image) => image.id), DEVICE_PHOTO_ID]);
 const STATUSES = new Set<string>(RECEIPT_STATUSES);
 
 export type KeyValueStore = {
@@ -138,7 +138,7 @@ function parseReceipt(value: unknown, companyId: string): LocalReceipt {
     amountMinor: record.amountMinor,
     currency,
     date,
-    imageId: imageId as SyntheticImageId,
+    imageId: imageId as ReceiptImageId,
     status: status as ReceiptStatus,
   };
   const idempotencyKey = optionalString(record.idempotencyKey);

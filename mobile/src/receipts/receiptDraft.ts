@@ -13,6 +13,11 @@ export const SYNTHETIC_IMAGES = [
 
 export type SyntheticImageId = (typeof SYNTHETIC_IMAGES)[number]["id"];
 
+/** Metadata for a photo taken this visit. The bytes are not this id. */
+export const DEVICE_PHOTO_ID = "device-photo";
+
+export type ReceiptImageId = SyntheticImageId | typeof DEVICE_PHOTO_ID;
+
 export type LocalReceipt = {
   localId: string;
   companyId: string;
@@ -20,7 +25,7 @@ export type LocalReceipt = {
   amountMinor: number;
   currency: string;
   date: string;
-  imageId: SyntheticImageId;
+  imageId: ReceiptImageId;
   status: ReceiptStatus;
   idempotencyKey?: string;
   receiptId?: string;
@@ -46,7 +51,8 @@ export function formatMoney(amountMinor: number, currency: string): string {
   return `${whole}.${fraction} ${currency}`;
 }
 
-export function syntheticImageLabel(imageId: SyntheticImageId): string {
+export function syntheticImageLabel(imageId: ReceiptImageId): string {
+  if (imageId === DEVICE_PHOTO_ID) return "Photo";
   const image = SYNTHETIC_IMAGES.find((item) => item.id === imageId);
   if (!image) {
     throw new DomainError(`unknown synthetic image: ${imageId}`);
@@ -68,7 +74,10 @@ export function captureDraft(input: CaptureInput): LocalReceipt {
   if (!localId) {
     throw new DomainError("local id is required");
   }
-  const image = SYNTHETIC_IMAGES.find((item) => item.id === input.imageId);
+  const image =
+    input.imageId === DEVICE_PHOTO_ID
+      ? DEVICE_PHOTO_ID
+      : SYNTHETIC_IMAGES.find((item) => item.id === input.imageId)?.id;
   if (!image) {
     throw new DomainError("pick a synthetic image");
   }
@@ -80,7 +89,7 @@ export function captureDraft(input: CaptureInput): LocalReceipt {
     amountMinor: money.amountMinor,
     currency: money.currency,
     date: parseDateOnly(input.date),
-    imageId: image.id,
+    imageId: image,
     status: "Draft",
   };
 }

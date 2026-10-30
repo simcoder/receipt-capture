@@ -5,7 +5,17 @@
     "scheme": "receipt-capture",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "plugins": ["expo-router", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Receipt capture uses the camera to photograph a receipt.",
+          "photosPermission": "Receipt capture uses a photo you choose."
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": false
     }

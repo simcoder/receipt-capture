@@ -23,6 +23,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Spec 002 in `.spec/002-ux.md` is the UX plan. The screens change. The rules from spec 001 do not.
 - 2026-10-30: Issue 26 makes the signed-in screen the company receipt list from `GET /receipts`. Logout still clears the device queue. The next sign-in loads that company's receipts again.
 - 2026-10-30: Issue 27 removes the Offline switch. A banner under the status bar is red when the device has no network and green when it does. Offline still uses the local fake. Online still uses the API with the same idempotency key. A returning network does not submit.
+- 2026-10-30: Issue 28 opens the capture form from the camera, the photo library, or a fake receipt. The photo stays in memory for that visit. It is sent only when online and under the 500 KB quarantine limit. The list and the device queue do not store image bytes. Fake receipts keep the cafe, fuel, and office image ids. The signed-in shell is a bottom menu: Home, a forest-green Capture button, and Profile. On a simulator, Capture does not open the camera, so the library screen stays up. Cafe, fuel, and office buttons stay hidden unless `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1`. The signed-in capture form does not list receipts or offer Log out. It opens as a sheet. Pull the handle down to dismiss it. Queue receipt submits and returns to Home. On a phone, a camera failure is shown. Profile shows the company and Log out. Cafe, fuel, and office pictures, and any other PNG or JPEG in `mobile/assets/fake-receipts/`, load into the simulator photo library with `npm run seed:photos`.
 
 ## Accepted
 
@@ -120,4 +121,4 @@ Each item stays out until a later decision says otherwise.
 
 ## Still open
 
-Spec 002 is written in `.spec/002-ux.md`. Issue 26 is merged. Issue 27 replaces the offline switch with the connectivity banner. Issues 28–30 on Project 4 remain, in that order.
+Spec 002 is written in `.spec/002-ux.md`. Issues 26 and 27 are merged. Issue 28 opens the form from the camera, the library, or a fake receipt. Issues 29 and 30 on Project 4 remain, in that order.
