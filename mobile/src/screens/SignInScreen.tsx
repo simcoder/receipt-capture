@@ -190,6 +190,24 @@ export default function SignInScreen() {
     });
   }
 
+  async function submitVisit(draft: LocalReceipt) {
+    setQueueError(null);
+    const queued = {
+      ...queueDraft(draft),
+      idempotencyKey: draft.idempotencyKey ?? `local-${draft.localId}`,
+    };
+    setReceipts((current) => [...current, queued]);
+    try {
+      await send(queued);
+    } catch (submitError) {
+      const message = submitError instanceof Error ? submitError.message : "Could not submit the receipt";
+      setQueueError(message);
+      throw new Error(message);
+    }
+    setVisit(null);
+    setTab("home");
+  }
+
   async function queueAndSubmit(localId: string) {
     const current = receipts.find((item) => item.localId === localId);
     if (!current) return;
@@ -288,6 +306,7 @@ export default function SignInScreen() {
           initialImageId={visit.imageId}
           photoBase64={visit.photoBase64}
           onBack={() => setVisit(null)}
+          onSubmit={submitVisit}
         />
       </SafeAreaView>
     );

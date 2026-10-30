@@ -30,6 +30,7 @@ export function ReceiptCapture(props: {
   initialImageId?: ReceiptImageId;
   photoBase64?: string;
   onBack?: () => void;
+  onSubmit?: (draft: LocalReceipt) => Promise<void>;
 }) {
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
@@ -37,8 +38,9 @@ export function ReceiptCapture(props: {
   const [date, setDate] = useState("");
   const [imageId, setImageId] = useState<ReceiptImageId | null>(props.initialImageId ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  function onSave() {
+  async function onSave() {
     setError(null);
     try {
       const draft = captureDraft({
@@ -50,6 +52,15 @@ export function ReceiptCapture(props: {
         date,
         imageId: imageId ?? "",
       });
+      if (props.onSubmit) {
+        setSaving(true);
+        try {
+          await props.onSubmit(draft);
+        } finally {
+          setSaving(false);
+        }
+        return;
+      }
       props.onChange([...props.receipts, draft]);
       setMerchant("");
       setAmount("");
@@ -148,65 +159,69 @@ export function ReceiptCapture(props: {
       )}
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable style={styles.primary} onPress={onSave}>
-        <Text style={styles.primaryText}>Save draft</Text>
+      <Pressable style={styles.primary} onPress={() => void onSave()} disabled={saving}>
+        <Text style={styles.primaryText}>{props.onSubmit ? "Queue receipt" : "Save draft"}</Text>
       </Pressable>
 
-      <Text style={styles.section}>Receipts</Text>
-      {props.receipts.length === 0 ? <Text>No receipts yet</Text> : null}
-      {props.receipts.map((receipt) => (
-        <View key={receipt.localId} style={styles.receipt}>
-          <Text style={styles.merchant}>{receipt.merchant}</Text>
-          <Text style={styles.receiptId}>
-            {receipt.receiptId
-              ? `Receipt id ${receipt.receiptId}`
-              : receipt.status === "Draft"
-                ? "Receipt id appears after you queue"
-                : "Receipt id appears when submit succeeds"}
-          </Text>
-          {!receipt.receiptId && props.queueError ? <Text style={styles.error}>{props.queueError}</Text> : null}
-          {receipt.replayed ? <Text style={styles.receiptId}>Same receipt</Text> : null}
-          {receipt.submitSource === "local-fake" ? <Text style={styles.receiptId}>Local fake</Text> : null}
-          {receipt.matchedTransactionId ? (
-            <Text style={styles.receiptId}>Matched {receipt.matchedTransactionId}</Text>
-          ) : null}
-          {receipt.userCorrected ? <Text style={styles.receiptId}>You confirmed this match</Text> : null}
-          <Text>
-            {formatMoney(receipt.amountMinor, receipt.currency)} · {receipt.amountMinor} minor units
-          </Text>
-          <Text>{receipt.date}</Text>
-          <Text>{syntheticImageLabel(receipt.imageId)}</Text>
-          {receipt.status === "Draft" ? (
-            <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
-              <Text>Queue receipt</Text>
-            </Pressable>
-          ) : null}
-          {receipt.status === "NeedsReview" && receipt.receiptId ? (
-            <MatchChoices
-              receipt={receipt}
-              siblings={props.receipts}
-              error={props.matchError}
-              onConfirm={(transactionId) => props.onConfirm(receipt.localId, transactionId)}
-            />
-          ) : null}
-          <Text style={styles.label}>Status</Text>
-          <View style={styles.rail}>
-            {RECEIPT_STATUSES.map((status) => {
-              const current = status === receipt.status;
-              return (
-                <Text key={status} style={[styles.status, current ? styles.statusCurrent : null]}>
-                  {status}
-                </Text>
-              );
-            })}
-          </View>
-          <Text style={styles.note}>Confirmed is set by the server or by a review correction.</Text>
-        </View>
-      ))}
+      {props.onBack ? null : (
+        <>
+          <Text style={styles.section}>Receipts</Text>
+          {props.receipts.length === 0 ? <Text>No receipts yet</Text> : null}
+          {props.receipts.map((receipt) => (
+            <View key={receipt.localId} style={styles.receipt}>
+              <Text style={styles.merchant}>{receipt.merchant}</Text>
+              <Text style={styles.receiptId}>
+                {receipt.receiptId
+                  ? `Receipt id ${receipt.receiptId}`
+                  : receipt.status === "Draft"
+                    ? "Receipt id appears after you queue"
+                    : "Receipt id appears when submit succeeds"}
+              </Text>
+              {!receipt.receiptId && props.queueError ? <Text style={styles.error}>{props.queueError}</Text> : null}
+              {receipt.replayed ? <Text style={styles.receiptId}>Same receipt</Text> : null}
+              {receipt.submitSource === "local-fake" ? <Text style={styles.receiptId}>Local fake</Text> : null}
+              {receipt.matchedTransactionId ? (
+                <Text style={styles.receiptId}>Matched {receipt.matchedTransactionId}</Text>
+              ) : null}
+              {receipt.userCorrected ? <Text style={styles.receiptId}>You confirmed this match</Text> : null}
+              <Text>
+                {formatMoney(receipt.amountMinor, receipt.currency)} · {receipt.amountMinor} minor units
+              </Text>
+              <Text>{receipt.date}</Text>
+              <Text>{syntheticImageLabel(receipt.imageId)}</Text>
+              {receipt.status === "Draft" ? (
+                <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
+                  <Text>Queue receipt</Text>
+                </Pressable>
+              ) : null}
+              {receipt.status === "NeedsReview" && receipt.receiptId ? (
+                <MatchChoices
+                  receipt={receipt}
+                  siblings={props.receipts}
+                  error={props.matchError}
+                  onConfirm={(transactionId) => props.onConfirm(receipt.localId, transactionId)}
+                />
+              ) : null}
+              <Text style={styles.label}>Status</Text>
+              <View style={styles.rail}>
+                {RECEIPT_STATUSES.map((status) => {
+                  const current = status === receipt.status;
+                  return (
+                    <Text key={status} style={[styles.status, current ? styles.statusCurrent : null]}>
+                      {status}
+                    </Text>
+                  );
+                })}
+              </View>
+              <Text style={styles.note}>Confirmed is set by the server or by a review correction.</Text>
+            </View>
+          ))}
 
-      <Pressable style={styles.primary} onPress={props.onLogout}>
-        <Text style={styles.primaryText}>Log out</Text>
-      </Pressable>
+          <Pressable style={styles.primary} onPress={props.onLogout}>
+            <Text style={styles.primaryText}>Log out</Text>
+          </Pressable>
+        </>
+      )}
     </ScrollView>
   );
 }
