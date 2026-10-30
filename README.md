@@ -4,6 +4,53 @@ Synthetic receipt-capture proof of concept. A reviewer can sign in as a seeded c
 
 This is not a product. There is no employer code, customer data, or live card data in this repo.
 
+## Architecture
+
+The phone signs in with Cognito, then calls the HTTP API with the ID token. The API reads `custom:company_id` and keeps each company's receipts separate. When the phone is offline, or the API cannot be reached, the same domain rules run on the device and store a local fake. Logout clears that device copy. The next sign-in loads the company list from DynamoDB.
+
+```mermaid
+flowchart LR
+  subgraph client [Expo client]
+    Screens[Screens]
+    Session[SessionProvider]
+    ApiHook[useReceiptApi]
+    Queue[AsyncStorage queue]
+    Domain[Domain rules]
+  end
+  subgraph aws [ReceiptCapturePoc]
+    Cognito[Cognito user pool]
+    HttpApi[HTTP API]
+    Lambda[API Lambda]
+    Receipts[(Receipts)]
+    Idempotency[(Idempotency)]
+    Quarantine[S3 quarantine]
+  end
+  Screens --> Session
+  Screens --> ApiHook
+  Screens --> Queue
+  ApiHook --> Domain
+  Queue --> Domain
+  Session -->|USER_PASSWORD_AUTH| Cognito
+  ApiHook -->|Bearer ID token| HttpApi
+  HttpApi -->|JWT authorizer| Lambda
+  Lambda --> Receipts
+  Lambda --> Idempotency
+  Lambda --> Quarantine
+```
+
+| Layer | What it uses |
+| --- | --- |
+| Client | Expo 57, expo-router, React 19, React Native 0.86, TypeScript 5.8 |
+| Sign-in | Cognito user pool, `USER_PASSWORD_AUTH`, no hosted UI. `custom:company_id` on the user. Tokens in expo-secure-store. |
+| Device copy | AsyncStorage for receipt metadata and the offline flag. Image bytes and tokens are not stored there. |
+| Domain | TypeScript in `src/domain/`. Node 22 tests. Money is integer minor units. Dates are `MM-DD-YYYY`. |
+| API | API Gateway HTTP API. JWT authorizer checks the ID token audience. One Lambda, Node.js 24. |
+| Data | DynamoDB on demand. Receipts keyed by `companyId` and `receiptId`. Idempotency keyed by `companyId` and `idempotencyKey`. |
+| Images | Private S3 bucket, blocked public access, SSE-S3. The Lambda can put an optional image. GET does not return the bytes. |
+| Deploy | AWS CDK 2. Stack name `ReceiptCapturePoc`. Account and region come from the CDK environment. A custom resource seeds the two demo users. Log groups keep one week. |
+
+Deploy and destroy from [infra/README.md](infra/README.md).
+
 ## Time box
 
 Started 2026-10-29. Spec 001, the plan that shipped, is [.spec/001-initial-poc.md](.spec/001-initial-poc.md). Spec 002, the UX plan, is [.spec/002-ux.md](.spec/002-ux.md). Decisions are in [DECISIONS.md](DECISIONS.md).
