@@ -13,6 +13,7 @@ export type CompanyReceipt = {
   currency: string;
   date: string;
   status: ReceiptStatus;
+  matchedTransactionId?: string;
 };
 
 export async function fetchCompanyReceipts(input: {
@@ -64,7 +65,14 @@ function parseCompanyReceipt(value: unknown): CompanyReceipt {
     currency,
     date,
     status: status as ReceiptStatus,
+    ...matchedTransactionId(record.matchedTransactionId),
   };
+}
+
+function matchedTransactionId(value: unknown): { matchedTransactionId: string } | Record<string, never> {
+  if (value == null || value === "") return {};
+  if (typeof value !== "string") throw new DomainError("matched transaction is invalid");
+  return { matchedTransactionId: value };
 }
 
 function requiredString(value: unknown, label: string): string {
