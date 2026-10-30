@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Image, Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { dateFromStored, formatDateOnly, maskAmount } from "../receipts/captureFields";
+import { dateFromStored, formatAmount, formatDateOnly, maskAmount } from "../receipts/captureFields";
 import { openMatches } from "../receipts/matchReceipt";
 import {
   captureDraft,
@@ -58,12 +58,14 @@ export function ReceiptCapture(props: {
       return;
     }
     setError(null);
+    const shown = formatAmount(amount);
+    if (shown !== amount) setAmount(shown);
     try {
       const draft = captureDraft({
         localId: `local-${props.receipts.length + 1}`,
         companyId: props.companyId,
         merchant,
-        amount,
+        amount: shown,
         currency,
         date,
         imageId: imageId ?? "",
@@ -122,6 +124,7 @@ export function ReceiptCapture(props: {
       <TextInput
         keyboardType="decimal-pad"
         onChangeText={(value) => setAmount(maskAmount(value))}
+        onEndEditing={() => setAmount((current) => formatAmount(current))}
         placeholder="12.34"
         style={styles.input}
         value={amount}

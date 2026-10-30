@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { DomainError } from "../src/domain/errors.ts";
 import { moneyFromDecimal } from "../src/domain/money.ts";
 import { captureDraft } from "../mobile/src/receipts/receiptDraft.ts";
-import { dateFromStored, formatDateOnly, maskAmount } from "../mobile/src/receipts/captureFields.ts";
+import { dateFromStored, formatAmount, formatDateOnly, maskAmount } from "../mobile/src/receipts/captureFields.ts";
 
 describe("capture fields", () => {
   it("keeps two decimals and drops a third", () => {
@@ -12,6 +12,19 @@ describe("capture fields", () => {
     assert.equal(maskAmount("12.3.4"), "12.34");
     assert.equal(maskAmount("12."), "12.");
     assert.equal(maskAmount("usd 12"), "12");
+  });
+
+  it("fills two decimal places and keeps a whole number in dollars", () => {
+    assert.equal(formatAmount("18"), "18.00");
+    assert.equal(formatAmount("1320"), "1320.00");
+    assert.equal(formatAmount("12.3"), "12.30");
+    assert.equal(formatAmount("12.34"), "12.34");
+    assert.equal(formatAmount("12."), "12.00");
+    assert.equal(formatAmount(".5"), "0.50");
+    assert.equal(formatAmount(""), "");
+    assert.equal(moneyFromDecimal(formatAmount("18"), "USD").amountMinor, 1800);
+    assert.equal(moneyFromDecimal(formatAmount("1320"), "USD").amountMinor, 132000);
+    assert.equal(moneyFromDecimal(formatAmount("12.3"), "USD").amountMinor, 1230);
   });
 
   it("stores a picked date as MM-DD-YYYY and still uses moneyFromDecimal", () => {

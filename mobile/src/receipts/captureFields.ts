@@ -8,6 +8,20 @@ export function maskAmount(value: string): string {
   return `${whole}.${fraction}`;
 }
 
+/**
+ * Show two decimal places without moving the point.
+ * "18" is 18.00 dollars. "1320" is 1320.00 dollars. "12.3" is 12.30.
+ */
+export function formatAmount(value: string): string {
+  const masked = maskAmount(value);
+  if (!masked || masked === ".") return "";
+  const dot = masked.indexOf(".");
+  const whole = dot < 0 ? masked : masked.slice(0, dot);
+  const fraction = dot < 0 ? "" : masked.slice(dot + 1);
+  if (!whole && !fraction) return "";
+  return `${whole || "0"}.${fraction.padEnd(2, "0")}`;
+}
+
 /** Local calendar day as MM-DD-YYYY. No time and no timezone. */
 export function formatDateOnly(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
