@@ -25,6 +25,8 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Issue 27 removes the Offline switch. A banner under the status bar is red when the device has no network and green when it does. Offline still uses the local fake. Online still uses the API with the same idempotency key. A returning network does not submit.
 - 2026-10-30: Issue 29 makes the date a picker. The stored value is still `MM-DD-YYYY`. The amount field keeps digits and one decimal and drops a third decimal digit. Submit still uses `moneyFromDecimal`. The photo stays in memory for that visit. It is sent only when online and under the 500 KB quarantine limit. The list and the device queue do not store image bytes. Fake receipts keep the cafe, fuel, and office image ids. The signed-in shell is a bottom menu: Home, a forest-green Capture button, and Profile. On a simulator, Capture does not open the camera, so the library screen stays up. Cafe, fuel, and office buttons stay hidden unless `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1`. The signed-in capture form does not list receipts or offer Log out. It opens as a sheet. Pull the handle down to dismiss it. Queue receipt submits and returns to Home. On a phone, a camera failure is shown. Profile shows the company and Log out. Cafe, fuel, and office pictures, and any other PNG or JPEG in `mobile/assets/fake-receipts/`, load into the simulator photo library with `npm run seed:photos`.
 - 2026-10-30: Issue 30 opens a NeedsReview receipt with the fields read-only and the existing Confirm match action. Other statuses stay on the list. Confirm still copies Confirmed from the match API. One transaction cannot take two receipts.
+- 2026-10-30: Issue 38 adds an optional notes field. Empty notes still submit.
+- 2026-10-30: Issue 39 submits while online. Offline capture stays Queued on the device, and a returning network submits those queued receipts. The client still does not mark Confirmed on its own.
 
 ## Accepted
 
@@ -90,7 +92,7 @@ Anything that changes this repo is a pull request into `main`. A task that does 
 
 ### D16. The on-device queue stores metadata
 
-Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, synthetic image id, status, and, once submit has run, the idempotency key, receipt id, replay flag, submit source, and, once a match is confirmed, the matched transaction id and the user-corrected flag. The screen no longer writes `receipt-capture.offline`. Online and offline come from the device network, and a returning network does not submit. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
+Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, optional notes, synthetic image id, status, and, once submit has run, the idempotency key, receipt id, replay flag, submit source, and, once a match is confirmed, the matched transaction id and the user-corrected flag. The screen no longer writes `receipt-capture.offline`. Online and offline come from the device network. A receipt queued while offline submits when the network returns. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
 
 ### D17. Submit uses one Idempotency-Key, then a local fake
 
@@ -122,4 +124,4 @@ Each item stays out until a later decision says otherwise.
 
 ## Still open
 
-Spec 002 is written in `.spec/002-ux.md`. Issues 26 through 29 are merged. Issue 30 opens a NeedsReview receipt to confirm the match.
+Spec 002 is written in `.spec/002-ux.md`. Issues 26 through 30 are merged. Issue 38 adds optional notes. Issue 39 submits while online and submits a queued receipt when the network returns.

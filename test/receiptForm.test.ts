@@ -6,8 +6,10 @@ import { parseDateOnly } from "../src/domain/dateOnly.ts";
 import { acceptIntoQueue, RECEIPT_STATUSES as DOMAIN_STATUSES } from "../src/domain/receiptState.ts";
 import {
   captureDraft,
+  captureActionLabel,
   formatMoney,
   queueDraft,
+  receiptsWaitingToSubmit,
   RECEIPT_STATUSES,
   type CaptureInput,
 } from "../mobile/src/receipts/receiptDraft.ts";
@@ -37,7 +39,27 @@ describe("receipt form", () => {
     assert.equal(draft.currency, money.currency);
     assert.equal(draft.date, parseDateOnly("10-29-2026"));
     assert.equal(draft.imageId, "cafe-receipt");
+    assert.equal(draft.notes, undefined);
     assert.equal(formatMoney(draft.amountMinor, draft.currency), "12.34 USD");
+  });
+
+  it("keeps optional notes and still saves when notes are empty", () => {
+    assert.equal(captureDraft(valid({ notes: "  gate code  " })).notes, "gate code");
+    assert.equal(captureDraft(valid({ notes: "   " })).notes, undefined);
+    assert.equal(captureDraft(valid()).status, "Draft");
+  });
+
+  it("submits while online and queues while offline", () => {
+    assert.equal(captureActionLabel({ signedIn: true, online: true }), "Submit");
+    assert.equal(captureActionLabel({ signedIn: true, online: false }), "Queue receipt");
+    assert.equal(captureActionLabel({ signedIn: false, online: true }), "Save draft");
+    const queued = queueDraft(captureDraft(valid()));
+    assert.deepEqual(
+      receiptsWaitingToSubmit([queued, { ...queued, localId: "done", receiptId: "server-1", status: "NeedsReview" }]).map(
+        (receipt) => receipt.localId,
+      ),
+      ["local-1"],
+    );
   });
 
   it("rejects a missing merchant, a bad amount, a bad date, and a missing image", () => {

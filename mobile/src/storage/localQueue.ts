@@ -56,6 +56,7 @@ export function toQueueMetadata(receipt: LocalReceipt): Record<string, string | 
   if (receipt.submitSource) metadata.submitSource = receipt.submitSource;
   if (receipt.matchedTransactionId) metadata.matchedTransactionId = receipt.matchedTransactionId;
   if (receipt.userCorrected) metadata.userCorrected = true;
+  if (receipt.notes) metadata.notes = receipt.notes;
   return metadata;
 }
 
@@ -152,6 +153,8 @@ function parseReceipt(value: unknown, companyId: string): LocalReceipt {
   const matchedTransactionId = optionalString(record.matchedTransactionId);
   if (matchedTransactionId) parsed.matchedTransactionId = matchedTransactionId;
   if (record.userCorrected === true) parsed.userCorrected = true;
+  const notes = optionalString(record.notes);
+  if (notes) parsed.notes = notes;
   return parsed;
 }
 
