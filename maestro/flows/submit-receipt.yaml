@@ -13,14 +13,13 @@ appId: host.exp.Exponent
 - tapOn: "Receipt capture"
 - tapOn: "Choose date"
 - tapOn: "15"
-- scrollUntilVisible:
-    element: "Submit"
-    direction: DOWN
 - tapOn: "Receipt capture"
+- swipe:
+    direction: UP
+- extendedWaitUntil:
+    visible: "Submit"
+    timeout: 5000
 - tapOn: "Submit"
-- tapOn:
-    text: "Submit"
-    optional: true
 - extendedWaitUntil:
     visible: ${EXPECT}
     timeout: 30000
