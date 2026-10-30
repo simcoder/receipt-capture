@@ -30,7 +30,7 @@ const receipt = {
   currency: "USD",
   date: "10-29-2026",
   idempotencyKey: "local-1",
-  accessToken: null as string | null,
+  idToken: null as string | null,
   apiUrl: "",
   offline: false,
 };
@@ -41,7 +41,7 @@ describe("submit receipt", () => {
     const result = await submitReceipt({
       ...receipt,
       store: memoryStore(),
-      accessToken: "access-token",
+      idToken: "id-token",
       apiUrl: "https://example.test",
       fetchImpl: async (url, init) => {
         const headers = init?.headers as Record<string, string>;
@@ -61,7 +61,7 @@ describe("submit receipt", () => {
 
     assert.equal(seen[0]?.url, "https://example.test/receipts");
     assert.equal(seen[0]?.headers["idempotency-key"], "local-1");
-    assert.equal(seen[0]?.headers.authorization, "Bearer access-token");
+    assert.equal(seen[0]?.headers.authorization, "Bearer id-token");
     assert.equal(seen[0]?.body.includes("imageBase64"), false);
     assert.equal(JSON.parse(seen[0]?.body ?? "{}").amount, "18.50");
     assert.equal(result.receiptId, "server-1");
@@ -74,7 +74,7 @@ describe("submit receipt", () => {
     const result = await submitReceipt({
       ...receipt,
       store: memoryStore(),
-      accessToken: "access-token",
+      idToken: "access-token",
       apiUrl: "https://example.test",
       fetchImpl: async (_url, init) => {
         calls += 1;
@@ -101,7 +101,7 @@ describe("submit receipt", () => {
     const input = {
       ...receipt,
       store,
-      accessToken: "access-token",
+      idToken: "access-token",
       apiUrl: "https://example.test",
       fetchImpl: async () => {
         throw new Error("connect ECONNREFUSED");
@@ -139,10 +139,26 @@ describe("submit receipt", () => {
     );
   });
 
+  it("surfaces an unauthorized response and does not store a local fake", async () => {
+    const store = memoryStore();
+    await assert.rejects(
+      () =>
+        submitReceipt({
+          ...receipt,
+          store,
+          idToken: "id-token",
+          apiUrl: "https://example.test",
+          fetchImpl: async () => new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 }),
+        }),
+      /Unauthorized/,
+    );
+    assert.equal(await store.getItem("receipt-capture.fake.northwind"), null);
+  });
+
   it("builds the request without a token in the body", () => {
     const request = submitRequest({
       apiUrl: "https://example.test/",
-      accessToken: "access-token",
+      idToken: "access-token",
       idempotencyKey: "local-1",
       merchant: "Northwind Cafe",
       amountMinor: 1234,

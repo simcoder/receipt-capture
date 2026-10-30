@@ -30,7 +30,6 @@ export default function SignInScreen() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [idToken, setIdToken] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [receipts, setReceipts] = useState<LocalReceipt[]>([]);
   const [previewCompany, setPreviewCompany] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
@@ -42,14 +41,8 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      SecureStore.getItemAsync(SECURE_STORE_KEYS[0]),
-      SecureStore.getItemAsync(SECURE_STORE_KEYS[1]),
-    ])
-      .then(([storedId, storedAccess]) => {
-        setIdToken(storedId);
-        setAccessToken(storedAccess);
-      })
+    SecureStore.getItemAsync(SECURE_STORE_KEYS[0])
+      .then((storedId) => setIdToken(storedId))
       .finally(() => setBusy(false));
   }, []);
 
@@ -71,7 +64,6 @@ export default function SignInScreen() {
       await SecureStore.setItemAsync(SECURE_STORE_KEYS[1], tokens.accessToken);
       await SecureStore.setItemAsync(SECURE_STORE_KEYS[2], tokens.refreshToken);
       setIdToken(tokens.idToken);
-      setAccessToken(tokens.accessToken);
       setPassword("");
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : "Sign-in failed");
@@ -141,7 +133,6 @@ export default function SignInScreen() {
     await Promise.all(cleared.deleteKeys.map((key) => SecureStore.deleteItemAsync(key)));
     setReceipts(cleared.queue);
     setIdToken(null);
-    setAccessToken(null);
     setPreviewCompany(null);
     setUsername("");
   }
@@ -160,7 +151,7 @@ export default function SignInScreen() {
       currency: receipt.currency,
       date: receipt.date,
       idempotencyKey,
-      accessToken,
+      idToken,
       apiUrl,
       offline,
     });

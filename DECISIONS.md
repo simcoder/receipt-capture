@@ -71,7 +71,7 @@ CDK source, the Lambda, and the cleanup steps live in `infra/` so they can be fo
 
 ### D13. Reviewer fallback does not require AWS
 
-`npm test` already runs with no cloud account. Submit sends `Idempotency-Key` to `POST /receipts` when the API URL and access token are present. A retry after a lost success uses that same key and returns the same receipt. If the device is offline, the API URL is missing, or the API cannot be reached, `npx expo start` uses a local fake with the same rule. The deployed API is the production-like path.
+`npm test` already runs with no cloud account. Submit sends `Idempotency-Key` to `POST /receipts` when the API URL and ID token are present. The ID token is the bearer, because the API authorizer checks its audience and the company claim is on that token. A retry after a lost success uses that same key and returns the same receipt. If the device is offline, the API URL is missing, or the API cannot be reached, `npx expo start` uses a local fake with the same rule. The deployed API is the production-like path.
 
 ### D14. Uploaded files stay in quarantine
 
@@ -87,7 +87,7 @@ Receipt metadata for one company lives in AsyncStorage under `receipt-capture.qu
 
 ### D17. Submit uses one Idempotency-Key, then a local fake
 
-The client assigns one key per local receipt and sends it as `Idempotency-Key` on `POST /receipts`. The body is merchant, a decimal amount, currency, and `MM-DD-YYYY`. Image bytes are not sent. A lost success retries that same key once, and the API returns the stored receipt. If that retry also fails, or the API URL or access token is missing, the local fake stores the result under `receipt-capture.fake.{companyId}` and returns the same receipt on the next submit. Logout clears that company's fake store. The client copies the returned status. It does not mark Confirmed on its own.
+The client assigns one key per local receipt and sends it as `Idempotency-Key` on `POST /receipts`. The body is merchant, a decimal amount, currency, and `MM-DD-YYYY`. Image bytes are not sent. A lost success retries that same key once, and the API returns the stored receipt. If that retry also fails, or the API URL or ID token is missing, the local fake stores the result under `receipt-capture.fake.{companyId}` and returns the same receipt on the next submit. Logout clears that company's fake store. The client copies the returned status. It does not mark Confirmed on its own.
 
 ## Out of scope
 

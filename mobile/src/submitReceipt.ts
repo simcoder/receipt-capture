@@ -59,7 +59,7 @@ export function amountDecimal(amountMinor: number): string {
 
 export function submitRequest(input: {
   apiUrl: string;
-  accessToken: string;
+  idToken: string;
   idempotencyKey: string;
   merchant: string;
   amountMinor: number;
@@ -72,7 +72,7 @@ export function submitRequest(input: {
     init: {
       method: "POST",
       headers: {
-        authorization: `Bearer ${input.accessToken}`,
+        authorization: `Bearer ${input.idToken}`,
         "content-type": "application/json",
         "idempotency-key": input.idempotencyKey,
       },
@@ -94,19 +94,19 @@ export async function submitReceipt(input: {
   currency: string;
   date: string;
   idempotencyKey: string;
-  accessToken: string | null;
+  idToken: string | null;
   apiUrl: string;
   offline: boolean;
   fetchImpl?: typeof fetch;
 }): Promise<SubmitResult> {
-  const canCallApi = !input.offline && Boolean(input.apiUrl) && Boolean(input.accessToken);
+  const canCallApi = !input.offline && Boolean(input.apiUrl) && Boolean(input.idToken);
   if (!canCallApi) {
     return saveFake(input.store, input);
   }
 
   const request = submitRequest({
     apiUrl: input.apiUrl,
-    accessToken: input.accessToken ?? "",
+    idToken: input.idToken ?? "",
     idempotencyKey: input.idempotencyKey,
     merchant: input.merchant,
     amountMinor: input.amountMinor,
@@ -154,10 +154,7 @@ async function postReceipt(
     throw new SubmitTransportError();
   }
   if (!response.ok) {
-    const message =
-      payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string"
-        ? payload.error
-        : "Submit failed";
+    const message = apiErrorMessage(payload);
     throw new Error(message);
   }
   if (!payload || typeof payload !== "object" || !("receipt" in payload)) {
@@ -277,6 +274,13 @@ async function loadFake(store: KeyValueStore, companyId: string): Promise<FakeSt
   const records = "records" in parsed && Array.isArray(parsed.records) ? parsed.records : [];
   const receipts = "receipts" in parsed && Array.isArray(parsed.receipts) ? parsed.receipts : [];
   return { records: records as FakeState["records"], receipts: receipts as StoredReceipt[] };
+}
+
+function apiErrorMessage(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "Submit failed";
+  if ("error" in payload && typeof payload.error === "string") return payload.error;
+  if ("message" in payload && typeof payload.message === "string") return payload.message;
+  return "Submit failed";
 }
 
 function isTransportFailure(error: unknown): boolean {

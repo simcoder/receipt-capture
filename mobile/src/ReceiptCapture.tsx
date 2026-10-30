@@ -153,8 +153,13 @@ export function ReceiptCapture(props: {
         <View key={receipt.localId} style={styles.receipt}>
           <Text style={styles.merchant}>{receipt.merchant}</Text>
           <Text style={styles.receiptId}>
-            {receipt.receiptId ? `Receipt id ${receipt.receiptId}` : "Receipt id appears after you queue"}
+            {receipt.receiptId
+              ? `Receipt id ${receipt.receiptId}`
+              : receipt.status === "Draft"
+                ? "Receipt id appears after you queue"
+                : "Receipt id appears when submit succeeds"}
           </Text>
+          {!receipt.receiptId && props.queueError ? <Text style={styles.error}>{props.queueError}</Text> : null}
           {receipt.replayed ? <Text style={styles.receiptId}>Same receipt</Text> : null}
           {receipt.submitSource === "local-fake" ? <Text style={styles.receiptId}>Local fake</Text> : null}
           <Text>
