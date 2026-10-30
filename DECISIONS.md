@@ -22,6 +22,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-30: Spec 001 in `.spec/001-initial-poc.md` is the completed plan, issues 1–11. The demo script, AI usage notes, and recording are not part of that spec.
 - 2026-10-30: Spec 002 in `.spec/002-ux.md` is the UX plan. The screens change. The rules from spec 001 do not.
 - 2026-10-30: Issue 26 makes the signed-in screen the company receipt list from `GET /receipts`. Logout still clears the device queue. The next sign-in loads that company's receipts again.
+- 2026-10-30: Issue 27 removes the Offline switch. A banner under the status bar is red when the device has no network and green when it does. Offline still uses the local fake. Online still uses the API with the same idempotency key. A returning network does not submit.
 
 ## Accepted
 
@@ -31,7 +32,7 @@ The app lives entirely inside `receipt-capture/`. Nothing for this proof of conc
 
 ### D2. Expo is the client
 
-The reviewer-facing client is Expo and TypeScript in `mobile/`, using expo-router and expo-secure-store. Sign-in is in-app `USER_PASSWORD_AUTH`. Tokens stay in SecureStore. Logout clears those tokens and the local queue. The receipt form captures merchant, amount, currency, an `MM-DD-YYYY` date, and one of the bundled synthetic images. It shows Draft, Queued, Uploading, Processing, Failed, NeedsReview, and Confirmed. This screen only creates a Draft and can move that draft to Queued. It does not mark Confirmed. The offline toggle and the durable queue are in AsyncStorage. See D16.
+The reviewer-facing client is Expo and TypeScript in `mobile/`, using expo-router and expo-secure-store. Sign-in is in-app `USER_PASSWORD_AUTH`. Tokens stay in SecureStore. Logout clears those tokens and the local queue. The receipt form captures merchant, amount, currency, an `MM-DD-YYYY` date, and one of the bundled synthetic images. It shows Draft, Queued, Uploading, Processing, Failed, NeedsReview, and Confirmed. This screen only creates a Draft and can move that draft to Queued. It does not mark Confirmed. A banner under the status bar follows the device network. The durable queue is in AsyncStorage. See D16.
 
 ### D3. Money is integer minor units
 
@@ -87,7 +88,7 @@ Anything that changes this repo is a pull request into `main`. A task that does 
 
 ### D16. The on-device queue stores metadata
 
-Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, synthetic image id, status, and, once submit has run, the idempotency key, receipt id, replay flag, submit source, and, once a match is confirmed, the matched transaction id and the user-corrected flag. The offline flag lives under `receipt-capture.offline` and survives relaunch. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
+Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, synthetic image id, status, and, once submit has run, the idempotency key, receipt id, replay flag, submit source, and, once a match is confirmed, the matched transaction id and the user-corrected flag. The screen no longer writes `receipt-capture.offline`. Online and offline come from the device network, and a returning network does not submit. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
 
 ### D17. Submit uses one Idempotency-Key, then a local fake
 
@@ -119,4 +120,4 @@ Each item stays out until a later decision says otherwise.
 
 ## Still open
 
-Spec 002 is written in `.spec/002-ux.md` and is not built. Issues 26–30 on Project 4 are that work, in that order.
+Spec 002 is written in `.spec/002-ux.md`. Issue 26 is merged. Issue 27 replaces the offline switch with the connectivity banner. Issues 28–30 on Project 4 remain, in that order.

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { openMatches } from "../receipts/matchReceipt";
 import {
   captureDraft,
@@ -19,11 +19,9 @@ const IMAGE_COLORS: Record<SyntheticImageId, string> = {
 
 export function ReceiptCapture(props: {
   companyId: string;
-  offline: boolean;
   queueError: string | null;
   receipts: readonly LocalReceipt[];
   onChange: (receipts: LocalReceipt[]) => void;
-  onOfflineChange: (offline: boolean) => void;
   onQueue: (localId: string) => void;
   onConfirm: (localId: string, transactionId: string) => void;
   matchError: string | null;
@@ -73,19 +71,7 @@ export function ReceiptCapture(props: {
       <Text style={styles.title}>Receipt capture</Text>
       <Text style={styles.label}>Company</Text>
       <Text>{props.companyId}</Text>
-      <View style={styles.offlineRow}>
-        <Text>Offline</Text>
-        <Switch
-          value={props.offline}
-          onValueChange={props.onOfflineChange}
-          trackColor={{ true: "#1f3a2e", false: "#ccc" }}
-        />
-      </View>
-      <Text style={styles.note}>
-        {props.offline
-          ? "Offline. The queue is saved on this device and comes back after relaunch."
-          : "The queue is saved on this device and comes back after relaunch."}
-      </Text>
+      <Text style={styles.note}>The queue is saved on this device and comes back after relaunch.</Text>
       {props.queueError ? <Text style={styles.error}>{props.queueError}</Text> : null}
 
       <Text style={styles.label}>Merchant</Text>
@@ -250,7 +236,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 24, gap: 8, paddingBottom: 48 },
   title: { fontSize: 28, fontWeight: "600", marginBottom: 8 },
-  offlineRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 },
   section: { fontSize: 20, fontWeight: "600", marginTop: 16 },
   label: { fontSize: 13, color: "#555", marginTop: 8 },
   input: {
