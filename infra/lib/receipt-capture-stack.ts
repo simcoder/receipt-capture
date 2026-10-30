@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import * as cdk from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
@@ -6,9 +7,12 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
 import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as authorizers from "aws-cdk-lib/aws-apigatewayv2-authorizers";
+import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
+import * as origins from "aws-cdk-lib/aws-cloudfront-origins";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as s3deploy from "aws-cdk-lib/aws-s3-deployment";
 import { Construct } from "constructs";
 import { demoUsers } from "./demo-users.ts";
 
@@ -149,6 +153,44 @@ export class ReceiptCaptureStack extends cdk.Stack {
       });
     }
 
+    const portalDist = path.join(import.meta.dirname, "../../portal/dist");
+    const portalSite = fs.existsSync(path.join(portalDist, "index.html"))
+      ? portalDist
+      : path.join(import.meta.dirname, "../portal-placeholder");
+    const site = new s3.Bucket(this, "PortalSite", {
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+    });
+    const distribution = new cloudfront.Distribution(this, "Portal", {
+      defaultBehavior: {
+        origin: origins.S3BucketOrigin.withOriginAccessControl(site),
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+      defaultRootObject: "index.html",
+      priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+      errorResponses: [
+        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: "/index.html" },
+        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: "/index.html" },
+      ],
+    });
+    new s3deploy.BucketDeployment(this, "PortalFiles", {
+      sources: [
+        s3deploy.Source.asset(portalSite),
+        s3deploy.Source.jsonData("config.json", {
+          region: this.region,
+          userPoolId: userPool.userPoolId,
+          userPoolClientId: userPoolClient.userPoolClientId,
+          apiUrl: httpApi.apiEndpoint,
+        }),
+      ],
+      destinationBucket: site,
+      distribution,
+      distributionPaths: ["/*"],
+    });
+
     new cdk.CfnOutput(this, "StackName", { value: this.stackName });
     new cdk.CfnOutput(this, "Region", { value: this.region });
     new cdk.CfnOutput(this, "UserPoolId", { value: userPool.userPoolId });
@@ -157,5 +199,6 @@ export class ReceiptCaptureStack extends cdk.Stack {
     new cdk.CfnOutput(this, "ReceiptsTableName", { value: receipts.tableName });
     new cdk.CfnOutput(this, "IdempotencyTableName", { value: idempotency.tableName });
     new cdk.CfnOutput(this, "QuarantineBucketName", { value: quarantine.bucketName });
+    new cdk.CfnOutput(this, "PortalUrl", { value: `https://${distribution.distributionDomainName}` });
   }
 }

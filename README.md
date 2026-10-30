@@ -17,6 +17,10 @@ flowchart LR
     Queue[AsyncStorage queue]
     Domain[Domain rules]
   end
+  subgraph portal [Review portal]
+    Pages[Sign-in and table]
+    Memory[In-memory token]
+  end
   subgraph aws [ReceiptCapturePoc]
     Cognito[Cognito user pool]
     HttpApi[HTTP API]
@@ -24,6 +28,8 @@ flowchart LR
     Receipts[(Receipts)]
     Idempotency[(Idempotency)]
     Quarantine[S3 quarantine]
+    CloudFront[CloudFront]
+    Site[Private portal bucket]
   end
   Screens --> Session
   Screens --> ApiHook
@@ -32,6 +38,10 @@ flowchart LR
   Queue --> Domain
   Session -->|USER_PASSWORD_AUTH| Cognito
   ApiHook -->|Bearer ID token| HttpApi
+  Pages --> Memory
+  Memory -->|USER_PASSWORD_AUTH| Cognito
+  Pages -->|Bearer ID token| HttpApi
+  CloudFront --> Site
   HttpApi -->|JWT authorizer| Lambda
   Lambda --> Receipts
   Lambda --> Idempotency
@@ -47,6 +57,8 @@ flowchart LR
 | API | API Gateway HTTP API. JWT authorizer checks the ID token audience. One Lambda, Node.js 24. |
 | Data | DynamoDB on demand. Receipts keyed by `companyId` and `receiptId`. Idempotency keyed by `companyId` and `idempotencyKey`. |
 | Images | Private S3 bucket, blocked public access, SSE-S3. The Lambda can put an optional image. GET does not return the bytes. |
+| Review portal | Vite, React 19, and TypeScript in `portal/`. Same Cognito password sign-in. The ID token stays in memory for the tab. |
+| Site | CloudFront Price Class 100 serves the portal over HTTPS. The bucket blocks direct public reads. Origin access control is the only reader. |
 | Deploy | AWS CDK 2. Stack name `ReceiptCapturePoc`. Account and region come from the CDK environment. A custom resource seeds the two demo users. Log groups keep one week. |
 
 Deploy and destroy from [infra/README.md](infra/README.md).
@@ -85,10 +97,11 @@ Requires Node.js 22.18 or newer.
 ```bash
 npm install
 npm ci --prefix infra
+npm ci --prefix portal
 npm run test:all
 ```
 
-`npm run test:all` runs the domain tests, the typecheck, and the API rule tests. It prints how many of those three commands passed and exits non-zero if one fails. Pull requests run the same command in GitHub Actions.
+`npm run test:all` runs the domain tests, the typecheck, the API rule tests, and the portal typecheck. It prints how many of those four commands passed and exits non-zero if one fails. Pull requests run the same command in GitHub Actions.
 
 The simulator walk is separate. Install Maestro with `curl -Ls "https://get.maestro.mobile.dev" | bash` and a JDK with `brew install openjdk@21`. Set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` in `mobile/.env` and restart Expo. With the app open from `npm run ios`, run `npm run record:simulator`. That clears the receipt tables, then signs in as northwind and checks a 100% match (Blue Bottle at 18.50 USD), an 80% match (Harbor Grill at 24.00 USD), a NeedsReview match (City Parking at 22.00 USD, left unmatched), a failed upload with Retry, and a contoso sign-in that cannot see the northwind receipts. The video is an mp4 under `maestro/recordings/`. Commit that mp4 after the run. `npm run clear:receipts` clears the tables without recording.
 
@@ -125,6 +138,25 @@ That folder already has cafe, fuel, and office. Add any other PNG or JPEG there 
 If seeding fails, set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` in `mobile/.env` and restart Expo. **Capture** then shows **Use a fake receipt** for cafe, fuel, and office. Leave that variable unset and those buttons stay hidden.
 
 The banner under the status bar is green while the Mac has a network and red when it does not. With the banner green, **Submit** sends the receipt to the API. With the banner red, **Queue receipt** keeps it on the device. Turning the network back on submits that queued receipt. A lost success retries the same key and keeps the same receipt id. Notes are optional.
+
+## Review portal
+
+The portal lists receipts the phone already submitted. It does not create a receipt, edit merchant, amount, currency, or date, or delete a row. A NeedsReview receipt can confirm one open match. A Failed receipt can retry. The page copies Confirmed from the API response.
+
+From this folder:
+
+```bash
+npm ci --prefix portal
+cp portal/config.example.json portal/public/config.json
+```
+
+Fill `portal/public/config.json` with the region, user pool id, app client id, and API URL from the stack outputs. That file stays off git. Then:
+
+```bash
+npm run dev --prefix portal
+```
+
+Open the printed local URL and sign in with the same demo user as the phone. Deploy publishes the site. From `infra/`, `npm run deploy` builds `portal/` first and prints `PortalUrl`, an `https://*.cloudfront.net` address. The bucket stays closed to direct public reads. Tear down is still `npm run destroy`.
 
 ## Companies
 

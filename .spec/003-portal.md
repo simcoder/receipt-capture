@@ -1,6 +1,6 @@
 # 003 — Receipt review portal
 
-Status: written on 2026-10-30. Not built.
+Status: built on 2026-10-30.
 
 A public web page reviews the receipts the phone already submitted. The phone still creates them. The portal does not add a status, a second submit path, or an edit of merchant, amount, currency, or date. It does not delete a receipt. Notes stay on the phone. Photo bytes stay in quarantine.
 

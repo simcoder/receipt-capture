@@ -7,7 +7,7 @@
     "test": "node --test test/*.test.mjs",
     "synth": "cdk synth",
     "diff": "cdk diff ReceiptCapturePoc",
-    "deploy": "cdk deploy ReceiptCapturePoc --require-approval never",
+    "deploy": "npm run build --prefix ../portal && cdk deploy ReceiptCapturePoc --require-approval never",
     "destroy": "cdk destroy ReceiptCapturePoc --force"
   },
   "dependencies": {
