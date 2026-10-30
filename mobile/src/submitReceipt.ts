@@ -29,6 +29,7 @@ export type SubmitResult = {
   status: ReceiptStatus;
   replayed: boolean;
   source: "api" | "local-fake";
+  matchedTransactionId?: string;
 };
 
 type StoredReceipt = {
@@ -40,6 +41,7 @@ type StoredReceipt = {
   date: string;
   status: ReceiptStatus;
   matchedTransactionId?: string;
+  userCorrected?: boolean;
 };
 
 type FakeState = {
@@ -170,7 +172,17 @@ async function postReceipt(
     throw new Error("Submit failed");
   }
   const replayed = "replayed" in payload && payload.replayed === true;
-  return { receiptId, status: status as ReceiptStatus, replayed, source: "api" };
+  const matchedTransactionId =
+    "matchedTransactionId" in receipt && typeof receipt.matchedTransactionId === "string"
+      ? receipt.matchedTransactionId
+      : undefined;
+  return {
+    receiptId,
+    status: status as ReceiptStatus,
+    replayed,
+    source: "api",
+    ...(matchedTransactionId ? { matchedTransactionId } : {}),
+  };
 }
 
 async function saveFake(
@@ -201,6 +213,7 @@ async function saveFake(
       status: existing.status,
       replayed: true,
       source: "local-fake",
+      ...(existing.matchedTransactionId ? { matchedTransactionId: existing.matchedTransactionId } : {}),
     };
   }
 
@@ -229,6 +242,7 @@ async function saveFake(
     status: stored.status,
     replayed: false,
     source: "local-fake",
+    ...(stored.matchedTransactionId ? { matchedTransactionId: stored.matchedTransactionId } : {}),
   };
 }
 

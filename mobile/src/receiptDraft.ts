@@ -26,6 +26,8 @@ export type LocalReceipt = {
   receiptId?: string;
   replayed?: boolean;
   submitSource?: "api" | "local-fake";
+  matchedTransactionId?: string;
+  userCorrected?: boolean;
 };
 
 export type CaptureInput = {

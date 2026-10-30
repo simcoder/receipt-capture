@@ -20,6 +20,7 @@ import { deviceStore } from "../src/deviceStore";
 import { clearCompanyQueue, loadLocalSession, saveOffline, saveQueue } from "../src/localQueue";
 import { queueDraft, type LocalReceipt } from "../src/receiptDraft";
 import { ReceiptCapture } from "../src/ReceiptCapture";
+import { confirmReceiptMatch } from "../src/matchReceipt";
 import { clearFake, submitReceipt } from "../src/submitReceipt";
 
 const region = process.env.EXPO_PUBLIC_COGNITO_REGION ?? "";
@@ -36,6 +37,7 @@ export default function SignInScreen() {
   const [queueReady, setQueueReady] = useState(false);
   const [canPersist, setCanPersist] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
+  const [matchError, setMatchError] = useState<string | null>(null);
   const saveGeneration = useRef(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(true);
@@ -162,6 +164,7 @@ export default function SignInScreen() {
       status: result.status,
       replayed: result.replayed,
       submitSource: result.source,
+      ...(result.matchedTransactionId ? { matchedTransactionId: result.matchedTransactionId } : {}),
     });
   }
 
@@ -178,6 +181,40 @@ export default function SignInScreen() {
       await send(queued);
     } catch (submitError) {
       setQueueError(submitError instanceof Error ? submitError.message : "Could not submit the receipt");
+    }
+  }
+
+  async function onConfirm(localId: string, transactionId: string) {
+    const current = receipts.find((item) => item.localId === localId);
+    if (!current?.receiptId) return;
+    setMatchError(null);
+    try {
+      const result = await confirmReceiptMatch({
+        store: deviceStore,
+        siblings: receipts,
+        receipt: {
+          receiptId: current.receiptId,
+          companyId: current.companyId,
+          merchant: current.merchant,
+          amountMinor: current.amountMinor,
+          currency: current.currency,
+          date: current.date,
+          status: current.status,
+        },
+        transactionId,
+        idToken,
+        apiUrl,
+        offline,
+        submitSource: current.submitSource,
+      });
+      replaceReceipt({
+        ...current,
+        status: result.status,
+        matchedTransactionId: result.matchedTransactionId,
+        userCorrected: result.userCorrected,
+      });
+    } catch (confirmError) {
+      setMatchError(confirmError instanceof Error ? confirmError.message : "Could not confirm the match");
     }
   }
 
@@ -209,6 +246,8 @@ export default function SignInScreen() {
           onChange={setReceipts}
           onOfflineChange={setOffline}
           onQueue={(localId) => void queueAndSubmit(localId)}
+          onConfirm={(localId, transactionId) => void onConfirm(localId, transactionId)}
+          matchError={matchError}
           onLogout={onLogout}
         />
       </SafeAreaView>

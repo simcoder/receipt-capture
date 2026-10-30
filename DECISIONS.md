@@ -18,6 +18,7 @@ Living record for this proof of concept. An entry is added when the choice is ma
 - 2026-10-29: Issue 8 publishes the offline queue. Receipt metadata and the offline flag are stored in AsyncStorage, per company. Tokens stay in SecureStore. Receipt image bytes are not stored. Logout clears that company's queue. Relaunch loads the same queue.
 - 2026-10-29: Issue 9 publishes the CDK stack in `infra/` and deploys `ReceiptCapturePoc` from that folder. The Lambda date copy is `MM-DD-YYYY`, matching the domain. Tear down with `npm run destroy` in `infra/`.
 - 2026-10-30: Issue 10 wires submit to `POST /receipts` with `Idempotency-Key`. A lost success is retried with the same key and returns the same receipt. If the API cannot be reached, the app uses a local fake with that same rule.
+- 2026-10-30: Issue 11 adds the match choices on a NeedsReview receipt. The user confirms one open transaction. A second receipt cannot take it. A later processor result leaves that correction in place.
 
 ## Accepted
 
@@ -83,11 +84,15 @@ Anything that changes this repo is a pull request into `main`. A task that does 
 
 ### D16. The on-device queue stores metadata
 
-Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, synthetic image id, status, and, once submit has run, the idempotency key, receipt id, replay flag, and submit source. The offline flag lives under `receipt-capture.offline` and survives relaunch. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
+Receipt metadata for one company lives in AsyncStorage under `receipt-capture.queue.{companyId}`. The record is merchant, integer minor units, currency, `MM-DD-YYYY` date, synthetic image id, status, and, once submit has run, the idempotency key, receipt id, replay flag, submit source, and, once a match is confirmed, the matched transaction id and the user-corrected flag. The offline flag lives under `receipt-capture.offline` and survives relaunch. Tokens stay in SecureStore. Receipt image bytes are not written to AsyncStorage or logs. Logout removes that company's queue key. Another company's key is a different store entry.
 
 ### D17. Submit uses one Idempotency-Key, then a local fake
 
 The client assigns one key per local receipt and sends it as `Idempotency-Key` on `POST /receipts`. The body is merchant, a decimal amount, currency, and `MM-DD-YYYY`. Image bytes are not sent. A lost success retries that same key once, and the API returns the stored receipt. If that retry also fails, or the API URL or ID token is missing, the local fake stores the result under `receipt-capture.fake.{companyId}` and returns the same receipt on the next submit. Logout clears that company's fake store. The client copies the returned status. It does not mark Confirmed on its own.
+
+### D18. The user confirms a NeedsReview match
+
+A NeedsReview receipt lists open transactions that share company, currency, and minor units and have merchant overlap. Confirm match sends that transaction id to `POST /receipts/{id}/match`. The screen copies the Confirmed status from that response. One transaction cannot take two receipts. If the user has corrected the receipt, a later processor result does not change the status or the matched transaction. With no API, the same rules run in the local fake.
 
 ## Out of scope
 

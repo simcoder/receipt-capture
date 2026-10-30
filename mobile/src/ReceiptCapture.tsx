@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { openMatches } from "./matchReceipt";
 import {
   captureDraft,
   formatMoney,
@@ -24,6 +25,8 @@ export function ReceiptCapture(props: {
   onChange: (receipts: LocalReceipt[]) => void;
   onOfflineChange: (offline: boolean) => void;
   onQueue: (localId: string) => void;
+  onConfirm: (localId: string, transactionId: string) => void;
+  matchError: string | null;
   onLogout: () => void;
 }) {
   const [merchant, setMerchant] = useState("");
@@ -161,6 +164,10 @@ export function ReceiptCapture(props: {
           {!receipt.receiptId && props.queueError ? <Text style={styles.error}>{props.queueError}</Text> : null}
           {receipt.replayed ? <Text style={styles.receiptId}>Same receipt</Text> : null}
           {receipt.submitSource === "local-fake" ? <Text style={styles.receiptId}>Local fake</Text> : null}
+          {receipt.matchedTransactionId ? (
+            <Text style={styles.receiptId}>Matched {receipt.matchedTransactionId}</Text>
+          ) : null}
+          {receipt.userCorrected ? <Text style={styles.receiptId}>You confirmed this match</Text> : null}
           <Text>
             {formatMoney(receipt.amountMinor, receipt.currency)} · {receipt.amountMinor} minor units
           </Text>
@@ -170,6 +177,14 @@ export function ReceiptCapture(props: {
             <Pressable style={styles.secondary} onPress={() => onQueue(receipt.localId)}>
               <Text>Queue receipt</Text>
             </Pressable>
+          ) : null}
+          {receipt.status === "NeedsReview" && receipt.receiptId ? (
+            <MatchChoices
+              receipt={receipt}
+              siblings={props.receipts}
+              error={props.matchError}
+              onConfirm={(transactionId) => props.onConfirm(receipt.localId, transactionId)}
+            />
           ) : null}
           <Text style={styles.label}>Status</Text>
           <View style={styles.rail}>
@@ -190,6 +205,44 @@ export function ReceiptCapture(props: {
         <Text style={styles.primaryText}>Log out</Text>
       </Pressable>
     </ScrollView>
+  );
+}
+
+function MatchChoices(props: {
+  receipt: LocalReceipt;
+  siblings: readonly LocalReceipt[];
+  error: string | null;
+  onConfirm: (transactionId: string) => void;
+}) {
+  if (!props.receipt.receiptId) return null;
+  const choices = openMatches(
+    {
+      receiptId: props.receipt.receiptId,
+      companyId: props.receipt.companyId,
+      merchant: props.receipt.merchant,
+      amountMinor: props.receipt.amountMinor,
+      currency: props.receipt.currency,
+      date: props.receipt.date,
+      status: props.receipt.status,
+    },
+    props.siblings,
+  );
+  return (
+    <View>
+      <Text style={styles.label}>Match</Text>
+      {choices.length === 0 ? <Text>No open match</Text> : null}
+      {choices.map((choice) => (
+        <View key={choice.transactionId} style={styles.matchChoice}>
+          <Text>
+            {choice.merchant} · {formatMoney(choice.amountMinor, choice.currency)}
+          </Text>
+          <Pressable style={styles.secondary} onPress={() => props.onConfirm(choice.transactionId)}>
+            <Text>Confirm match</Text>
+          </Pressable>
+        </View>
+      ))}
+      {props.error ? <Text style={styles.error}>{props.error}</Text> : null}
+    </View>
   );
 }
 
@@ -263,5 +316,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
+  matchChoice: { marginTop: 8 },
   error: { color: "#8a1f1f" },
 });
