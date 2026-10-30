@@ -4,9 +4,10 @@ import {
   candidateMatches,
   confirmMatch,
   type SeedTransaction,
-} from "../../src/domain/matching.ts";
-import type { ReceiptStatus } from "../../src/domain/receiptState.ts";
-import type { KeyValueStore } from "./localQueue.ts";
+} from "../../../src/domain/matching.ts";
+import type { ReceiptStatus } from "../../../src/domain/receiptState.ts";
+import { ApiTransportError, apiErrorMessage, apiRequest } from "../api/client.ts";
+import type { KeyValueStore } from "../storage/localQueue.ts";
 import { SEED_TRANSACTIONS, fakeKey } from "./submitReceipt.ts";
 
 export type MatchChoice = {
@@ -100,24 +101,12 @@ export async function confirmReceiptMatch(input: {
     return confirmLocally(input.store, input.siblings, input.receipt, input.transactionId);
   }
 
-  const request = {
-    url: `${input.apiUrl.replace(/\/$/, "")}/receipts/${input.receipt.receiptId}/match`,
-    init: {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${input.idToken}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ transactionId: input.transactionId }),
-    } satisfies RequestInit,
-  };
-  const fetchImpl = input.fetchImpl ?? fetch;
   try {
-    return await postMatch(fetchImpl, request, input.store, input.receipt);
+    return await postMatch(input);
   } catch (firstError) {
     if (!isTransportFailure(firstError)) throw firstError;
     try {
-      return await postMatch(fetchImpl, request, input.store, input.receipt);
+      return await postMatch(input);
     } catch (secondError) {
       if (!isTransportFailure(secondError)) throw secondError;
       return confirmLocally(input.store, input.siblings, input.receipt, input.transactionId);
@@ -208,27 +197,31 @@ async function confirmLocally(
   };
 }
 
-async function postMatch(
-  fetchImpl: typeof fetch,
-  request: { url: string; init: RequestInit },
-  store: KeyValueStore,
-  receipt: MatchReceipt,
-): Promise<MatchResult> {
-  let response: Response;
-  try {
-    response = await fetchImpl(request.url, request.init);
-  } catch {
-    throw new TransportError();
-  }
-  const payload: unknown = await response.json().catch(() => null);
-  if (response.status >= 500) throw new TransportError();
-  if (!response.ok) throw new Error(errorMessage(payload));
+async function postMatch(input: {
+  store: KeyValueStore;
+  receipt: MatchReceipt;
+  transactionId: string;
+  idToken: string | null;
+  apiUrl: string;
+  fetchImpl?: typeof fetch;
+}): Promise<MatchResult> {
+  const result = await apiRequest({
+    apiUrl: input.apiUrl,
+    idToken: input.idToken,
+    path: `/receipts/${input.receipt.receiptId}/match`,
+    method: "POST",
+    body: { transactionId: input.transactionId },
+    fetchImpl: input.fetchImpl,
+  });
+  if (result.status >= 500) throw new ApiTransportError();
+  if (!result.ok) throw new Error(apiErrorMessage(result.payload, "Match failed"));
+  const payload = result.payload;
   const body = payload && typeof payload === "object" && "receipt" in payload ? payload.receipt : null;
   if (!body || typeof body !== "object") throw new Error("Match failed");
   const status = "status" in body ? body.status : undefined;
   const matchedTransactionId = "matchedTransactionId" in body ? body.matchedTransactionId : undefined;
   if (status !== "Confirmed" || typeof matchedTransactionId !== "string") throw new Error("Match failed");
-  await rememberMatch(store, receipt, matchedTransactionId);
+  await rememberMatch(input.store, input.receipt, matchedTransactionId);
   return { status, matchedTransactionId, userCorrected: true };
 }
 
@@ -280,20 +273,6 @@ async function writeFake(store: KeyValueStore, companyId: string, state: FakeSta
   await store.setItem(fakeKey(companyId), JSON.stringify(state));
 }
 
-class TransportError extends Error {
-  constructor() {
-    super("api unavailable");
-    this.name = "TransportError";
-  }
-}
-
 function isTransportFailure(error: unknown): boolean {
-  return error instanceof TransportError;
-}
-
-function errorMessage(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "Match failed";
-  if ("error" in payload && typeof payload.error === "string") return payload.error;
-  if ("message" in payload && typeof payload.message === "string") return payload.message;
-  return "Match failed";
+  return error instanceof ApiTransportError;
 }

@@ -1,7 +1,7 @@
-import { DomainError } from "../../src/domain/errors.ts";
-import { parseDateOnly } from "../../src/domain/dateOnly.ts";
-import { moneyFromDecimal } from "../../src/domain/money.ts";
-import { RECEIPT_STATUSES, transition, type ReceiptStatus } from "../../src/domain/receiptState.ts";
+import { DomainError } from "../../../src/domain/errors.ts";
+import { parseDateOnly } from "../../../src/domain/dateOnly.ts";
+import { moneyFromDecimal } from "../../../src/domain/money.ts";
+import { RECEIPT_STATUSES, transition, type ReceiptStatus } from "../../../src/domain/receiptState.ts";
 
 export { RECEIPT_STATUSES, type ReceiptStatus };
 

@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { KeyValueStore } from "../mobile/src/localQueue.ts";
+import type { KeyValueStore } from "../mobile/src/storage/localQueue.ts";
 import {
   SEED_TRANSACTIONS,
   submitReceipt,
   submitRequest,
-} from "../mobile/src/submitReceipt.ts";
+} from "../mobile/src/receipts/submitReceipt.ts";
 
 function memoryStore(): KeyValueStore {
   const values = new Map<string, string>();

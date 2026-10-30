@@ -10,8 +10,8 @@ import {
   queueDraft,
   RECEIPT_STATUSES,
   type CaptureInput,
-} from "../mobile/src/receiptDraft.ts";
-import * as receiptDraft from "../mobile/src/receiptDraft.ts";
+} from "../mobile/src/receipts/receiptDraft.ts";
+import * as receiptDraft from "../mobile/src/receipts/receiptDraft.ts";
 
 function valid(overrides: Partial<CaptureInput> = {}): CaptureInput {
   return {
