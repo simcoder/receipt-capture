@@ -26,6 +26,7 @@ export type LocalReceipt = {
   currency: string;
   date: string;
   imageId: ReceiptImageId;
+  notes?: string;
   status: ReceiptStatus;
   idempotencyKey?: string;
   receiptId?: string;
@@ -43,6 +44,7 @@ export type CaptureInput = {
   currency: string;
   date: string;
   imageId: string;
+  notes?: string;
 };
 
 export function formatMoney(amountMinor: number, currency: string): string {
@@ -91,7 +93,25 @@ export function captureDraft(input: CaptureInput): LocalReceipt {
     date: parseDateOnly(input.date),
     imageId: image,
     status: "Draft",
+    ...optionalNotes(input.notes),
   };
+}
+
+function optionalNotes(value: string | undefined): { notes: string } | Record<string, never> {
+  const notes = value?.trim() ?? "";
+  if (!notes) return {};
+  return { notes };
+}
+
+/** Signed-in capture submits while online and queues while offline. */
+export function captureActionLabel(input: { signedIn: boolean; online: boolean }): string {
+  if (!input.signedIn) return "Save draft";
+  return input.online ? "Submit" : "Queue receipt";
+}
+
+/** Queued receipts that have not reached the server yet. */
+export function receiptsWaitingToSubmit(receipts: readonly LocalReceipt[]): LocalReceipt[] {
+  return receipts.filter((receipt) => receipt.status === "Queued" && !receipt.receiptId);
 }
 
 /** Queue acceptance is Queued. Confirmed is not a result of this action. */

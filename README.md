@@ -124,7 +124,7 @@ That folder already has cafe, fuel, and office. Add any other PNG or JPEG there 
 
 If seeding fails, set `EXPO_PUBLIC_SHOW_FAKE_RECEIPTS=1` in `mobile/.env` and restart Expo. **Capture** then shows **Use a fake receipt** for cafe, fuel, and office. Leave that variable unset and those buttons stay hidden.
 
-The banner under the status bar is green while the Mac has a network and red when it does not. With the banner green, **Queue receipt** sends the receipt to the API. With the banner red, or when the API URL is missing, it uses the local fake. Turning the network back on does not send that receipt again. A lost success retries the same key and keeps the same receipt id.
+The banner under the status bar is green while the Mac has a network and red when it does not. With the banner green, **Submit** sends the receipt to the API. With the banner red, **Queue receipt** keeps it on the device. Turning the network back on submits that queued receipt. A lost success retries the same key and keeps the same receipt id. Notes are optional.
 
 ## Companies
 

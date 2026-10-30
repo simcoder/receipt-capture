@@ -101,6 +101,13 @@ describe("offline queue", () => {
     assert.equal(store.values.has(OFFLINE_KEY), true);
   });
 
+  it("keeps optional notes on the device queue", async () => {
+    const store = memoryStore();
+    await saveQueue(store, "northwind", [draft({ notes: "gate code" })]);
+    const reloaded = await loadLocalSession(store, "northwind");
+    assert.equal(reloaded.receipts[0]?.notes, "gate code");
+  });
+
   it("keeps a photo visit as an image id and does not store the bytes", async () => {
     const store = memoryStore();
     const photo = draft({ imageId: "device-photo" });

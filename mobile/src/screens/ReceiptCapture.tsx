@@ -5,6 +5,7 @@ import { dateFromStored, formatDateOnly, maskAmount } from "../receipts/captureF
 import { openMatches } from "../receipts/matchReceipt";
 import {
   captureDraft,
+  captureActionLabel,
   formatMoney,
   RECEIPT_STATUSES,
   SYNTHETIC_IMAGES,
@@ -33,11 +34,13 @@ export function ReceiptCapture(props: {
   photoBase64?: string;
   onBack?: () => void;
   onSubmit?: (draft: LocalReceipt) => Promise<void>;
+  online?: boolean;
 }) {
   const [merchant, setMerchant] = useState("");
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [date, setDate] = useState("");
+  const [notes, setNotes] = useState("");
   const [dateOpen, setDateOpen] = useState(false);
   const [imageId, setImageId] = useState<ReceiptImageId | null>(props.initialImageId ?? null);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +57,7 @@ export function ReceiptCapture(props: {
         currency,
         date,
         imageId: imageId ?? "",
+        notes,
       });
       if (props.onSubmit) {
         setSaving(true);
@@ -69,6 +73,7 @@ export function ReceiptCapture(props: {
       setAmount("");
       setCurrency("USD");
       setDate("");
+      setNotes("");
       setImageId(props.initialImageId ?? null);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Could not save the receipt");
@@ -168,9 +173,24 @@ export function ReceiptCapture(props: {
         </View>
       )}
 
+      <Text style={styles.label}>Notes</Text>
+      <TextInput
+        onChangeText={setNotes}
+        placeholder="Optional"
+        style={styles.input}
+        value={notes}
+      />
+
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <Pressable style={styles.primary} onPress={() => void onSave()} disabled={saving}>
-        <Text style={styles.primaryText}>{props.onSubmit ? "Queue receipt" : "Save draft"}</Text>
+      <Pressable
+        accessibilityLabel={captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })}
+        style={styles.primary}
+        onPress={() => void onSave()}
+        disabled={saving}
+      >
+        <Text style={styles.primaryText}>
+          {captureActionLabel({ signedIn: Boolean(props.onSubmit), online: props.online !== false })}
+        </Text>
       </Pressable>
 
       {props.onBack ? null : (
