@@ -46,7 +46,7 @@ appId: host.exp.Exponent
 - assertVisible: "NeedsReview"
 - tapOn: "City Parking"
 - assertVisible: "Review"
-- assertVisible: "Airport Parking"
+- assertVisible: "Airport Parking · 22.00 USD"
 - swipe:
     from:
       id: "sheet-handle"
